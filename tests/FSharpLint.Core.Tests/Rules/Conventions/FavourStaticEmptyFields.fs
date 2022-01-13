@@ -10,13 +10,16 @@ type TestConventionsFavourStaticEmptyFields() =
 
     [<Test>]
     member this.FavourStaticEmptyFieldsShouldProduceError_1() =
-        this.Parse "let foo = \"\""
+        this.Parse """let foo = "" """
 
         Assert.IsTrue this.ErrorsExist
 
     [<Test>]
     member this.FavourStaticEmptyFieldsShouldProduceError_2() =
-        this.Parse "System.Console.WriteLine \"\""
+        this.Parse """
+open System
+
+Console.WriteLine "" """
 
         Assert.IsTrue this.ErrorsExist
 
@@ -28,7 +31,10 @@ type TestConventionsFavourStaticEmptyFields() =
 
     [<Test>]
     member this.FavourStaticEmptyFieldsShouldProduceError_4() =
-        this.Parse "System.Console.WriteLine([].Length)"
+        this.Parse """
+open System
+
+Console.WriteLine([].Length)"""
 
         Assert.IsTrue this.ErrorsExist
 
@@ -57,13 +63,19 @@ let foo a =
 
     [<Test>]
     member this.FavourStaticEmptyFieldsShouldProduceError_8() =
-        this.Parse "System.Console.WriteLine([||].Length)"
+        this.Parse """
+open System
+
+Console.WriteLine([||].Length)"""
 
         Assert.IsTrue this.ErrorsExist
 
     [<Test>]
     member this.FavourStaticEmptyFieldsShouldNotProduceError_1() =
-        this.Parse "let bar = String.Empty"
+        this.Parse """
+open System
+
+let bar = String.Empty"""
 
         Assert.IsTrue this.NoErrorsExist
 
@@ -75,19 +87,25 @@ let foo a =
 
     [<Test>]
     member this.FavourStaticEmptyFieldsShouldNotProduceError_3() =
-        this.Parse "System.Console.WriteLine System.String.Empty"
+        this.Parse "
+open System
+
+Console.WriteLine String.Empty"
 
         Assert.IsTrue this.NoErrorsExist
 
     [<Test>]
     member this.FavourStaticEmptyFieldsShouldNotProduceError_4() =
-        this.Parse "let aList = List.Empty"
+        this.Parse "let aList: List<string> = List.Empty"
 
         Assert.IsTrue this.NoErrorsExist
 
     [<Test>]
     member this.FavourStaticEmptyFieldsShouldNotProduceError_5() =
-        this.Parse "System.Console.WriteLine List.Empty.Length"
+        this.Parse """
+open System
+
+Console.WriteLine List.Empty.Length"""
 
         Assert.IsTrue this.NoErrorsExist
 
@@ -99,13 +117,18 @@ let foo a =
 
     [<Test>]
     member this.FavourStaticEmptyFieldsShouldNotProduceError_7() =
-        this.Parse "System.Console.WriteLine Array.Empty.Length"
+        this.Parse """
+open System
+
+Console.WriteLine Array.empty.Length"""
 
         Assert.IsTrue this.NoErrorsExist
 
     [<Test>]
     member this.FavourStaticEmptyFieldsShouldNotProduceError_8() =
         this.Parse """
+let foo: List<string> = List.Empty
+
 match foo with
 | [] -> true
 | head::_ -> false"""

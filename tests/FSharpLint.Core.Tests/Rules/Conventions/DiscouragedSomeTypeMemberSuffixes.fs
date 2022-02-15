@@ -68,7 +68,6 @@ type Tree =
 
         Assert.IsTrue this.NoErrorsExist
 
-    [<Ignore "WIP">]
     [<Test>]
     member this.ThisShouldNotProduceError_3() =
         this.Parse """

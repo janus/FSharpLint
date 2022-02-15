@@ -59,6 +59,14 @@ module Schools =
         Assert.IsTrue this.ErrorsExist
 
     [<Test>]
+    member this.ThisShouldProduceError_7() =
+        this.Parse """
+module Schools =
+    type T = { CityArray: string array } """
+
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
     member this.ThisNotShouldProduceError_1() =
         this.Parse """
 type Tree =

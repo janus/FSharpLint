@@ -24,7 +24,6 @@ module Person =
 
         Assert.IsTrue this.ErrorsExist
 
-    [<Ignore "WIP">]
     [<Test>]
     member this.ThisShouldProduceError_3() =
         this.Parse """

@@ -41,7 +41,6 @@ type Tree =
 
         Assert.IsTrue this.ErrorsExist
 
-    [<Ignore "WIP">]
     [<Test>]
     member this.ThisShouldProduceError_5() =
         this.Parse """

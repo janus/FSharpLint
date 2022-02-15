@@ -9,6 +9,7 @@ type TestConventionsDiscouragedSomeTypeMemberSuffixes() =
     inherit TestAstNodeRuleBase.TestAstNodeRuleBase(DiscouragedSomeTypeMemberSuffixes.rule)
 
     [<Ignore "WIP">]
+    [<Test> ]
     member this.ThisShouldProduceError_1() =
         this.Parse """
 module Person =
@@ -17,6 +18,7 @@ module Person =
         Assert.IsTrue this.ErrorsExist
 
     [<Ignore "WIP">]
+    [<Test> ]
     member this.ThisShouldProduceError_2() =
         this.Parse """
 module Person =
@@ -25,6 +27,7 @@ module Person =
         Assert.IsTrue this.ErrorsExist
 
     [<Ignore "WIP">]
+    [<Test> ]
     member this.ThisShouldProduceError_3() =
         this.Parse """
 module Schools =
@@ -33,6 +36,7 @@ module Schools =
         Assert.IsTrue this.ErrorsExist
 
     [<Ignore "WIP">]
+    [<Test> ]
     member this.ThisShouldProduceError_4() =
         this.Parse """
 type Tree =
@@ -41,7 +45,8 @@ type Tree =
 
         Assert.IsTrue this.ErrorsExist
 
-    [<Ignore "WIP">] 
+    [<Ignore "WIP">]
+    [<Test> ]
     member this.ThisShouldProduceError_5() =
         this.Parse """
 type Tree =
@@ -51,6 +56,7 @@ type Tree =
         Assert.IsTrue this.ErrorsExist
 
     [<Ignore "WIP">]
+    [<Test> ]
     member this.ThisNotShouldProduceError_1() =
         this.Parse """
 type Tree =
@@ -60,6 +66,7 @@ type Tree =
         Assert.IsTrue this.NoErrorsExist
 
     [<Ignore "WIP">]
+    [<Test> ]
     member this.ThisShouldNotProduceError_2() =
         this.Parse """
 type Tree =
@@ -69,6 +76,7 @@ type Tree =
         Assert.IsTrue this.NoErrorsExist
 
     [<Ignore "WIP">]
+    [<Test> ]
     member this.ThisShouldNotProduceError_3() =
         this.Parse """
 module Person =

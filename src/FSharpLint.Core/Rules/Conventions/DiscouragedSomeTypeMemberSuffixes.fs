@@ -13,7 +13,7 @@ let discouragedMemberSuffixes: List<string> = ["Lst"; "List"; "Array"; "Opt"; "S
 let checkRecordFields (fields: List<SynField>) =
     let rec traverse recordFields (identifiers: List<string>) =
         match recordFields with
-        | SynField(_, _, maybeVal, synType, _, _, _, range)::rest ->
+        | SynField(_, _, maybeVal, synType, _, _, _, _)::rest ->
             match maybeVal with
             | Some field ->
                 let identifier: string = field.idText
@@ -31,7 +31,7 @@ let checkRecordFields (fields: List<SynField>) =
 let checkUnionFields (fields: List<SynUnionCase>) =
     let rec traverse unionCases (identifiers: List<string>) =
         match unionCases with
-        | SynUnionCase(_, ident,_, _, _,_)::rest ->
+        | SynUnionCase(_, ident,_, _, _, _)::rest ->
                 let identifier: string = ident.idText
                 let likelySuffixes = discouragedMemberSuffixes |> List.filter (fun text -> not (identifier.Equals text))
                 if likelySuffixes |> List.exists identifier.EndsWith then
@@ -44,14 +44,24 @@ let checkUnionFields (fields: List<SynUnionCase>) =
 
 let runner args =
     match args.AstNode with
-    | TypeDefinition(SynTypeDefn(_, typeRepresentation, _members, _implicitCtor, _)) ->
+    | TypeDefinition(SynTypeDefn(_, typeRepresentation, _members, _implicitCtor, range)) ->
         match typeRepresentation with
         | SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Record(_, fields, _), _) ->
-            checkRecordFields fields |> ignore
-            Array.empty
+            let identifiers = checkRecordFields fields
+            match identifiers with
+            | head::_ ->
+               let error =
+                   { Range = range
+                     Message = Resources.GetString "DiscouragedSomeTypeMemberSuffixes"
+                     SuggestedFix = None
+                     TypeChecks = List.Empty }
+                   |> Array.singleton
+               error
+            | [] -> Array.empty
         | SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Union(_, fields, _), _) ->
-            checkUnionFields fields |> ignore
+            let ranges = checkUnionFields fields
             Array.empty
+
         | _ -> Array.empty
     | _ -> Array.empty
 

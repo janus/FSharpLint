@@ -8,7 +8,6 @@ open System
 type TestConventionsDiscouragedSomeTypeMemberSuffixes() =
     inherit TestAstNodeRuleBase.TestAstNodeRuleBase(DiscouragedSomeTypeMemberSuffixes.rule)
 
-    [<Ignore "WIP">]
     [<Test>]
     member this.ThisShouldProduceError_1() =
         this.Parse """

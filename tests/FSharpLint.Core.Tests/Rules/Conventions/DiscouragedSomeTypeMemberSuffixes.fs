@@ -51,6 +51,14 @@ type Tree =
         Assert.IsTrue this.ErrorsExist
 
     [<Test>]
+    member this.ThisShouldProduceError_6() =
+        this.Parse """
+module Schools =
+    type T = { NameStr: string } """
+
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
     member this.ThisNotShouldProduceError_1() =
         this.Parse """
 type Tree =

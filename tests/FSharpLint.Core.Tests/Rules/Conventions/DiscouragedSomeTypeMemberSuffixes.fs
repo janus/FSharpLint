@@ -32,7 +32,6 @@ module Schools =
 
         Assert.IsTrue this.ErrorsExist
 
-    [<Ignore "WIP">]
     [<Test>]
     member this.ThisShouldProduceError_4() =
         this.Parse """

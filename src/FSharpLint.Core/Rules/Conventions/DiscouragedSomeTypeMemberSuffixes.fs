@@ -59,9 +59,17 @@ let runner args =
                error
             | [] -> Array.empty
         | SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Union(_, fields, _), _) ->
-            let ranges = checkUnionFields fields
-            Array.empty
-
+            let identifiers = checkUnionFields fields
+            match identifiers with
+            | head::_ ->
+               let error =
+                   { Range = range
+                     Message = Resources.GetString "DiscouragedSomeTypeMemberSuffixes"
+                     SuggestedFix = None
+                     TypeChecks = List.Empty }
+                   |> Array.singleton
+               error
+            | [] -> Array.empty
         | _ -> Array.empty
     | _ -> Array.empty
 

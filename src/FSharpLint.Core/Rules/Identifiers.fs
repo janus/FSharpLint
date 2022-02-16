@@ -79,4 +79,4 @@ let CyclomaticComplexity = identifier 71
 let FailwithBadUsage = identifier 72
 let FavourReRaise = identifier 73
 let FavourConsistentThis = identifier 74
-let PublicMembersNames = identifier 75
+let AvoidTypeHintSuffixesForNames = identifier 75

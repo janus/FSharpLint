@@ -317,6 +317,7 @@ type ConventionsConfig =
       numberOfItems:NumberOfItemsConfig option
       binding:BindingConfig option
       favourReRaise:EnabledConfig option
+      publicMembersNames:EnabledConfig option
       favourConsistentThis:RuleConfig<FavourConsistentThis.Config> option }
 with
     member this.Flatten() =
@@ -324,6 +325,7 @@ with
             this.recursiveAsyncFunction |> Option.bind (constructRuleIfEnabled RecursiveAsyncFunction.rule) |> Option.toArray
             this.redundantNewKeyword |> Option.bind (constructRuleIfEnabled RedundantNewKeyword.rule) |> Option.toArray
             this.favourReRaise |> Option.bind (constructRuleIfEnabled FavourReRaise.rule) |> Option.toArray
+            this.publicMembersNames |> Option.bind (constructRuleIfEnabled PublicMembersNames.rule) |> Option.toArray
             this.nestedStatements |> Option.bind (constructRuleWithConfig NestedStatements.rule) |> Option.toArray
             this.favourConsistentThis |> Option.bind (constructRuleWithConfig FavourConsistentThis.rule) |> Option.toArray
             this.cyclomaticComplexity |> Option.bind (constructRuleWithConfig CyclomaticComplexity.rule) |> Option.toArray
@@ -391,6 +393,7 @@ type Configuration =
       RecursiveAsyncFunction:EnabledConfig option
       RedundantNewKeyword:EnabledConfig option
       FavourReRaise:EnabledConfig option
+      PublicMembersNames:EnabledConfig option
       NestedStatements:RuleConfig<NestedStatements.Config> option
       FavourConsistentThis:RuleConfig<FavourConsistentThis.Config> option
       CyclomaticComplexity:RuleConfig<CyclomaticComplexity.Config> option
@@ -473,6 +476,7 @@ with
         RecursiveAsyncFunction = None
         RedundantNewKeyword = None
         FavourReRaise = None
+        PublicMembersNames = None
         NestedStatements = None
         FavourConsistentThis = None
         CyclomaticComplexity = None
@@ -618,6 +622,7 @@ let flattenConfig (config:Configuration) =
             config.RecursiveAsyncFunction |> Option.bind (constructRuleIfEnabled RecursiveAsyncFunction.rule)
             config.RedundantNewKeyword |> Option.bind (constructRuleIfEnabled RedundantNewKeyword.rule)
             config.FavourReRaise |> Option.bind (constructRuleIfEnabled FavourReRaise.rule)
+            config.PublicMembersNames |> Option.bind (constructRuleIfEnabled PublicMembersNames.rule)
             config.NestedStatements |> Option.bind (constructRuleWithConfig NestedStatements.rule)
             config.FavourConsistentThis |> Option.bind (constructRuleWithConfig FavourConsistentThis.rule)
             config.CyclomaticComplexity |> Option.bind (constructRuleWithConfig CyclomaticComplexity.rule)

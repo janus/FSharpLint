@@ -26,6 +26,15 @@ type Tree =
         Assert.IsTrue this.ErrorsExist
 
     [<Test>]
+    member this.ThisShouldProduceError_3() =
+        this.Parse """
+type MyClass() =
+    let random  = new System.Random()
+    member val RandomOpt = (random.Next() |> Some) with get, set """
+
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
     member this.ThisNotShouldProduceError_1() =
         this.Parse """
 type Tree =

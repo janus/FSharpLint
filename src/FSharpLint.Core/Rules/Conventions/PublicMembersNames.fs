@@ -1,4 +1,4 @@
-module FSharpLint.Rules.DiscouragedSomeTypeMemberSuffixes
+module FSharpLint.Rules.PublicMembersNames
 
 open FSharpLint.Framework
 open FSharpLint.Framework.Suggestion
@@ -52,7 +52,7 @@ let runner args =
             | head::_ ->
                let error =
                    { Range = range
-                     Message = Resources.GetString "DiscouragedSomeTypeMemberSuffixes"
+                     Message = Resources.GetString "PublicMembersNames"
                      SuggestedFix = None
                      TypeChecks = List.Empty }
                    |> Array.singleton
@@ -64,7 +64,7 @@ let runner args =
             | head::_ ->
                let error =
                    { Range = range
-                     Message = Resources.GetString "DiscouragedSomeTypeMemberSuffixes"
+                     Message = Resources.GetString "PublicMembersNames"
                      SuggestedFix = None
                      TypeChecks = List.Empty }
                    |> Array.singleton
@@ -74,7 +74,7 @@ let runner args =
     | _ -> Array.empty
 
 let rule =
-    { Name = "DiscouragedSomeTypeMemberSuffixes"
-      Identifier = Identifiers.DiscouragedSomeTypeMemberSuffixes
+    { Name = "PublicMembersNames"
+      Identifier = Identifiers.PublicMembersNames
       RuleConfig = { AstNodeRuleConfig.Runner = runner; Cleanup = ignore } }
     |> AstNodeRule

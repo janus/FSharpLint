@@ -35,6 +35,15 @@ type MyClass() =
         Assert.IsTrue this.ErrorsExist
 
     [<Test>]
+    member this.ThisShouldProduceError_4() =
+        this.Parse """
+type MyClass() =
+   let mutable someString = "someString"
+   member this.SomeStr with get() = someString and set(v : string) = someString <- v """
+
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
     member this.ThisNotShouldProduceError_1() =
         this.Parse """
 type Tree =

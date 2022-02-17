@@ -11,8 +11,8 @@ open System
 let ruleName: string = "AvoidTypeHintSuffixesForNames"
 let discouragedMemberSuffixes: List<string> = ["Lst"; "List"; "Array"; "Opt"; "Str"]
 
-let checkRecordFields (fields: List<SynField>) =
-    let rec traverse recordFields (identifiers: List<string>) =
+let isTypeHintSuffixesInRecordFields (fields: List<SynField>) =
+    let rec traverse recordFields =
         match recordFields with
         | SynField(_, _, maybeVal, synType, _, _, _, _)::rest ->
             match maybeVal with
@@ -20,39 +20,49 @@ let checkRecordFields (fields: List<SynField>) =
                 let identifier: string = field.idText
                 let likelySuffixes = discouragedMemberSuffixes |> List.filter (fun text -> not (identifier.Equals text))
                 if likelySuffixes |> List.exists identifier.EndsWith then
-                    traverse rest (identifier::identifiers)
+                    true
                 else
-                    traverse rest identifiers
+                    traverse rest
             | None ->
-                traverse rest identifiers
-        | _ -> identifiers
+                traverse rest
+        | [] -> false
 
-    traverse fields List.empty
+    traverse fields
 
-let checkUnionFields (fields: List<SynUnionCase>) =
-    let rec traverse unionCases (identifiers: List<string>) =
+let isTypeHintSuffixesInUnionFields (fields: List<SynUnionCase>) =
+    let rec traverse unionCases =
         match unionCases with
         | SynUnionCase(_, ident, _, _, _, _)::rest ->
-                let identifier: string = ident.idText
-                let likelySuffixes = discouragedMemberSuffixes |> List.filter (fun text -> not (identifier.Equals text))
-                if likelySuffixes |> List.exists identifier.EndsWith then
-                    traverse rest (identifier::identifiers)
-                else
-                    traverse rest identifiers
-        | _ -> identifiers
+            let identifier: string = ident.idText
+            let likelySuffixes = discouragedMemberSuffixes |> List.filter (fun text -> not (identifier.Equals text))
+            if likelySuffixes |> List.exists identifier.EndsWith then
+                true
+            else
+                traverse rest
+        | [] -> false
 
-    traverse fields List.empty
+    traverse fields
 
-let isTypeHintSuffixesinProperties (members: List<SynMemberDefn>) =
+let isTypeHintSuffixesInProperties (members: List<SynMemberDefn>) =
     let rec traverse memberDefinitions =
         match memberDefinitions with
-        | SynMemberDefn.AutoProperty(_, _, ident, _, _, _, _, _, expression, _, _)::rest ->
-                let identifier: string = ident.idText
+        | SynMemberDefn.AutoProperty(_, _, ident, _, _, _, _, _, _expression, _, _)::rest ->
+            let identifier: string = ident.idText
+            let likelySuffixes = discouragedMemberSuffixes |> List.filter (fun text -> not (identifier.Equals text))
+            if likelySuffixes |> List.exists identifier.EndsWith then
+                true
+            else
+                traverse rest
+        | SynMemberDefn.Member(SynBinding(_, _, _, _, _, _, _, pattern, _, expression, _, _), _)::rest ->
+            match pattern with
+            | SynPat.LongIdent(LongIdentWithDots(ident, _), _, _, _, _, _) ->
+                let identifier: string =  ident.Tail.Head.idText
                 let likelySuffixes = discouragedMemberSuffixes |> List.filter (fun text -> not (identifier.Equals text))
                 if likelySuffixes |> List.exists identifier.EndsWith then
                     true
                 else
                     traverse rest
+            | _ -> traverse rest
         | _::rest -> traverse rest
         | [] -> false
 
@@ -63,9 +73,7 @@ let runner args =
     | TypeDefinition(SynTypeDefn(_, typeRepresentation, _members, _implicitCtor, range)) ->
         match typeRepresentation with
         | SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Record(_, fields, _), _) ->
-            let identifiers = checkRecordFields fields
-            match identifiers with
-            | head::_ ->
+            if isTypeHintSuffixesInRecordFields fields then
                let error =
                    { Range = range
                      Message = Resources.GetString ruleName
@@ -73,11 +81,10 @@ let runner args =
                      TypeChecks = List.Empty }
                    |> Array.singleton
                error
-            | [] -> Array.empty
+            else
+                Array.empty
         | SynTypeDefnRepr.Simple(SynTypeDefnSimpleRepr.Union(_, fields, _), _) ->
-            let identifiers = checkUnionFields fields
-            match identifiers with
-            | head::_ ->
+            if isTypeHintSuffixesInUnionFields fields then
                let error =
                    { Range = range
                      Message = Resources.GetString ruleName
@@ -85,16 +92,17 @@ let runner args =
                      TypeChecks = List.Empty }
                    |> Array.singleton
                error
-            | [] -> Array.empty
+            else
+                Array.empty
         | SynTypeDefnRepr.ObjectModel(_, members, _) ->
-            if isTypeHintSuffixesinProperties members then
-               let error =
-                   { Range = range
-                     Message = Resources.GetString ruleName
-                     SuggestedFix = None
-                     TypeChecks = List.Empty }
-                   |> Array.singleton
-               error
+            if isTypeHintSuffixesInProperties members then
+                let error =
+                    { Range = range
+                      Message = Resources.GetString ruleName
+                      SuggestedFix = None
+                      TypeChecks = List.Empty }
+                    |> Array.singleton
+                error
             else
                 Array.empty         
         | _ -> Array.empty

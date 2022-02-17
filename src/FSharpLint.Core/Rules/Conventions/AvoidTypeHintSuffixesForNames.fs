@@ -12,11 +12,10 @@ let ruleName: string = "AvoidTypeHintSuffixesForNames"
 let discouragedMemberSuffixes: List<string> = ["Lst"; "List"; "Array"; "Opt"; "Str"]
 
 let private hasTypeHint (identifier: string) =
-    let likelySuffixes = discouragedMemberSuffixes |> List.filter (fun text -> not (identifier.Equals text))
-    if likelySuffixes |> List.exists identifier.EndsWith then
-        true
-    else
-        false
+    let likelySuffixes =
+        discouragedMemberSuffixes
+        |> List.filter (fun text -> not (identifier.Equals text))
+    likelySuffixes |> List.exists identifier.EndsWith
 
 let private generateError (range: range) =
     { Range = range

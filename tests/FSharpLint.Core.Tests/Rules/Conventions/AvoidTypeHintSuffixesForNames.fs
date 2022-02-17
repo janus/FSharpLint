@@ -72,8 +72,8 @@ module Person =
     [<Test>]
     member this.ThisShouldNotProduceError_4() =
         this.Parse """
-type MyClass() =
-   let mutable valOpt = 89
-   member this.SomeValue with get() = valOpt and set(v : int) = valOpt <- v """
+let getNothing () =
+    let valOpt = 90
+    valOpt """
 
         Assert.IsTrue this.NoErrorsExist

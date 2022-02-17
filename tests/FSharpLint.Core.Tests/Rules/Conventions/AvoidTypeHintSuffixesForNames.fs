@@ -68,3 +68,12 @@ module Person =
     type FullName = { First: string; Last: string } """
 
         Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.ThisShouldNotProduceError_4() =
+        this.Parse """
+type MyClass() =
+   let mutable valOpt = 89
+   member this.SomeValue with get() = valOpt and set(v : int) = valOpt <- v """
+
+        Assert.IsTrue this.NoErrorsExist

@@ -87,3 +87,11 @@ type Connection() =
 
         Assert.IsTrue this.NoErrorsExist
 
+    [<Test>]
+    member this.AttributeShouldNotProduceError() =
+        this.Parse """
+module Command =
+    [<Literal>]
+    let AuthChallenge = 130uy """
+
+        Assert.IsTrue this.NoErrorsExist

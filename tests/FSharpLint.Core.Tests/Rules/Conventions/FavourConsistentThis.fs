@@ -66,3 +66,12 @@ type Connection() =
         printfn "New World!" """
 
         Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.MemberMethodShouldNotProduceError() =
+        this.Parse """
+type Connection() =
+    let tryGetConnectionRequest() =
+        printfn "New World!" """
+
+        Assert.IsTrue this.NoErrorsExist

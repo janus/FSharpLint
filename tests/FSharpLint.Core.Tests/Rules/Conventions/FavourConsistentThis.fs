@@ -98,7 +98,6 @@ module Command =
         Assert.IsTrue this.NoErrorsExist
 
     [<Test>]
-    [<Ignore "WIP">]
     member this.NewShouldNotProduceError() =
         this.Parse """
 type TorMessageDigest(isSha256: bool) =

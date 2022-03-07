@@ -19,7 +19,7 @@ let runner (config: Config) args =
         match pattern with
         | SynPat.LongIdent(LongIdentWithDots(identifiers, _),_, _, _, _, _) ->
             match identifiers with
-            | head::_ when head.idText <> config.Symbol -> 
+            | head::_ when List.exists (fun elem -> head.idText.Equals elem) ["this"; "self"] && head.idText <> config.Symbol ->
                let error =
                    { Range = range
                      Message = String.Format(Resources.GetString "RulesFavourConsistentThis", config.Symbol)

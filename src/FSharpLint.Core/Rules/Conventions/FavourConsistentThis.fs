@@ -18,16 +18,19 @@ let runner (config: Config) args =
     | AstNode.Binding(SynBinding(_, _, _, _, _, _, _, pattern, _, _, range, _)) ->
         match pattern with
         | SynPat.LongIdent(LongIdentWithDots(identifiers, _),_, _, _, _, _) ->
-            match identifiers with
-            | head::_ when List.exists (fun elem -> head.idText.Equals elem) ["this"; "self"] && head.idText <> config.Symbol ->
-               let error =
-                   { Range = range
-                     Message = String.Format(Resources.GetString "RulesFavourConsistentThis", config.Symbol)
-                     SuggestedFix = None
-                     TypeChecks = List.Empty }
-                   |> Array.singleton
-               error
-            | _ -> Array.empty
+            if identifiers.Length = 2 then
+                match identifiers  with
+                | head::_ when head.idText <> config.Symbol ->
+                    let error =
+                        { Range = range
+                          Message = String.Format(Resources.GetString "RulesFavourConsistentThis", config.Symbol)
+                          SuggestedFix = None
+                          TypeChecks = List.Empty }
+                        |> Array.singleton
+                    error
+                | _ -> Array.empty
+            else
+                Array.empty
         | _ -> Array.empty
     | _ -> Array.empty
 

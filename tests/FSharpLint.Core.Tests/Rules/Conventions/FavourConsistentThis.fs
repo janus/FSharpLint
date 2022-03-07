@@ -68,7 +68,8 @@ type Connection() =
         Assert.IsTrue this.NoErrorsExist
 
     [<Test>]
-    member this.MemberMethodShouldNotProduceError() =
+    [<Ignore "WIP">]
+    member this.LetShouldNotProduceError() =
         this.Parse """
 type Connection() =
     let tryGetConnectionRequest() =

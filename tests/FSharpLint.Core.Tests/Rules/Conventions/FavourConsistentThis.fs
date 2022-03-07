@@ -76,3 +76,13 @@ type Connection() =
         printfn "New World!" """
 
         Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.UnderScoreMethodShouldNotProduceError() =
+        this.Parse """
+type Connection() =
+    member __.AcceptClient() =
+        printfn "New World!" """
+
+        Assert.IsTrue this.NoErrorsExist
+

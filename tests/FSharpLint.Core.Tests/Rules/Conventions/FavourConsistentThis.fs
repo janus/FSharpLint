@@ -96,3 +96,12 @@ module Command =
     let AuthChallenge = 130uy """
 
         Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.NewShouldNotProduceError() =
+        this.Parse """
+type TorMessageDigest(isSha256: bool) =
+    new() = TorMessageDigest false """
+
+        Assert.IsTrue this.NoErrorsExist
+

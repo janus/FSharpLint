@@ -268,7 +268,7 @@
     "favourReRaise": { "enabled": true },
     "AvoidTypeHintSuffixesForNames": { "enabled": false },
     "favourConsistentThis": {
-        "enabled": false,
+        "enabled": true,
         "config": {
             "symbol": "this"
         }

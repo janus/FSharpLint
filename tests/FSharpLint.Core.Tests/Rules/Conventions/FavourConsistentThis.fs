@@ -68,7 +68,6 @@ type Connection() =
         Assert.IsTrue this.NoErrorsExist
 
     [<Test>]
-    [<Ignore "WIP">]
     member this.LetShouldNotProduceError() =
         this.Parse """
 type Connection() =

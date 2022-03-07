@@ -58,6 +58,7 @@ type CustomerName(firstName, middleInitial, lastName) =
         Assert.IsTrue(this.ErrorExistsAt(4, 11))
 
     [<Test>]
+    [<Ignore "WIP">]
     member this.StaticMethodShouldNotProduceError() =
         this.Parse """
 type Connection() =
@@ -65,4 +66,3 @@ type Connection() =
         printfn "New World!" """
 
         Assert.IsTrue this.NoErrorsExist
-

@@ -12,6 +12,9 @@ open System
 [<RequireQualifiedAccess>]
 type Config = { Symbol: string }
 
+let internal isNotConsistent identifier symbol =
+    identifier <> symbol && identifier <> "_" && identifier <> "__"
+
 let runner (config: Config) args =
     let symbol = config.Symbol
     match args.AstNode with
@@ -20,7 +23,7 @@ let runner (config: Config) args =
         | SynPat.LongIdent(LongIdentWithDots(identifiers, _),_, _, _, _, _) ->
             if identifiers.Length = 2 then
                 match identifiers  with
-                | head::_ when head.idText <> config.Symbol ->
+                | head::_ when isNotConsistent head.idText symbol ->
                     let error =
                         { Range = range
                           Message = String.Format(Resources.GetString "RulesFavourConsistentThis", config.Symbol)

@@ -76,7 +76,6 @@ type Connection() =
         Assert.IsTrue this.NoErrorsExist
 
     [<Test>]
-    [<Ignore "WIP">]
     member this.UnderScoreMethodShouldNotProduceError() =
         this.Parse """
 type Connection() =

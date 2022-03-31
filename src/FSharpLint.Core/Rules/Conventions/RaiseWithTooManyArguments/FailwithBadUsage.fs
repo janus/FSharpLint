@@ -8,7 +8,7 @@ open FSharpLint.Framework.Rules
 open System
 open System.Collections.Generic
 
-let mutable failwithErrorMessageList = Set.empty
+let mutable failwithRangeList = List.Empty
 
 type private BadUsageType =
     | EmptyMessage
@@ -43,6 +43,7 @@ let private runner (args: AstNodeRuleParams) =
             | SwallowedException ->
                 "rather use `raise` passing the current exception as innerException (2nd parameter of Exception constructor), otherwise using `failwith` the exception details will be swallowed"
             | NullMessage -> "consider using a non-null error messages as parameter"
+
         let error =
             { Range = range
               Message = String.Format(Resources.GetString "RulesFailwithBadUsage", message)
@@ -62,14 +63,18 @@ let private runner (args: AstNodeRuleParams) =
             | SynExpr.Const (SynConst.String (id, _, _), _) when id = "" ->
                 generateError failwithId.idText id range BadUsageType.EmptyMessage maybeIdentifier
             | SynExpr.Const (SynConst.String (id, _, _), _) ->
-                if Set.contains id failwithErrorMessageList then
+                let testRange =
+                    not (List.isEmpty failwithRangeList)
+                    && List.exists (fun (ident, rng) -> id = ident && not (range = rng)) failwithRangeList
+
+                if testRange then
                     generateError failwithId.idText id range BadUsageType.DuplicateMessage maybeIdentifier
                 else
                     match maybeIdentifier with
                     | Some maybeId ->
                         generateError failwithId.idText id range BadUsageType.SwallowedException (Some maybeId)
                     | _ ->
-                        failwithErrorMessageList <- failwithErrorMessageList.Add(id)
+                        failwithRangeList <- List.append (List.singleton (id, range)) failwithRangeList
                         Array.empty
             | SynExpr.LongIdent (_, LongIdentWithDots (id, _), _, _) when
                 (ExpressionUtilities.longIdentToString id) = "String.Empty"
@@ -81,7 +86,7 @@ let private runner (args: AstNodeRuleParams) =
                     range
                     (BadUsageType.EmptyMessage)
                     (None)
-            | SynExpr.Null range -> 
+            | SynExpr.Null range ->
                 generateError failwithId.idText "null" range BadUsageType.NullMessage maybeIdentifier
             | _ -> Array.empty
         | SynExpr.TryWith (_, _, clauseList, _expression, _range, _, _) ->
@@ -100,7 +105,7 @@ let private runner (args: AstNodeRuleParams) =
     | AstNode.Expression expr -> checkExpr expr None
     | _ -> Array.empty
 
-let cleanup () = failwithErrorMessageList <- Set.empty
+let cleanup () = failwithRangeList <- List.Empty
 
 let rule =
     { Name = "FailwithBadUsage"

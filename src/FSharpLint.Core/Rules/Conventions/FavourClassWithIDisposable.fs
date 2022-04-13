@@ -1,4 +1,4 @@
-module FSharpLint.Rules.FavourIDisposableWithNewKeyword
+module FSharpLint.Rules.FavourClassWithIDisposable
 
 open System
 open System.Linq
@@ -15,14 +15,14 @@ open FSharpLint.Framework.Rules
 let private runner (args:AstNodeRuleParams) =
     match (args.AstNode, args.CheckInfo) with
     | AstNode.Expression(SynExpr.New(_, synType, expression, range)), Some checkInfo ->
-        // Use checkInfo to infer is this new expression implemented IDisposable
+        // Use checkInfo to infer if new expression implemented IDisposable
         Array.empty
 
     | _ -> Array.empty
 
 let rule =
-    { Name = "FavourIDisposableWithNewKeyword"
-      Identifier = Identifiers.FavourIDisposableWithNewKeyword
+    { Name = "FavourClassWithIDisposable"
+      Identifier = Identifiers.FavourClassWithIDisposable
       RuleConfig = { AstNodeRuleConfig.Runner = runner
                      Cleanup = ignore } }
     |> AstNodeRule

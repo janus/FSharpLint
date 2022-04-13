@@ -80,4 +80,4 @@ let FailwithBadUsage = identifier 72
 let FavourReRaise = identifier 73
 let FavourConsistentThis = identifier 74
 let AvoidTooShortNames = identifier 75
-let FavourIDisposableWithNewKeyword = identifier 76
+let FavourClassWithIDisposable = identifier 76

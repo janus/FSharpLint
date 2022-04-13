@@ -36,7 +36,7 @@
     <Compile Include="Rules\Conventions\SourceLength.fs" />
     <Compile Include="Rules\Conventions\NoPartialFunctions.fs" />
     <Compile Include="Rules\Conventions\FavourReRaise.fs" />
-    <Compile Include="Rules\Conventions\FavourIDisposableWithNewKeyword.fs" />
+    <Compile Include="Rules\Conventions\FavourClassWithIDisposable.fs" />
     <Compile Include="Rules\Conventions\FavourConsistentThis.fs" />
     <Compile Include="Rules\Conventions\AvoidTooShortNames.fs" />
     <Compile Include="Rules\Conventions\Naming\NamingHelpers.fs" />

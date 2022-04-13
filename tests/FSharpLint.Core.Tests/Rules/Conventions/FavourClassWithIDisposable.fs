@@ -26,7 +26,7 @@ let f2 ()=
    printfn "hello"
 """
 
-        Assert.IsTrue this.NoErrorsExist
+        Assert.IsTrue(this.ErrorsExist)
 
     [<Test>]
     member this.NewWithoutIDisposalShouldProduceError() =

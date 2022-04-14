@@ -336,7 +336,7 @@
   <data name="RulesFavourConsistentThis" xml:space="preserve">
     <value>Prefer using '{0}' consistently.</value>
   </data>
-  <data name="RulesStringFormating" xml:space="preserve">
-    <value>Rather use sprintf instead of String.Format.</value>
+  <data name="RulesPreferStringInterpolationWithSprintf" xml:space="preserve">
+    <value>Use sprintf instead of String.Format.</value>
   </data>
 </root>

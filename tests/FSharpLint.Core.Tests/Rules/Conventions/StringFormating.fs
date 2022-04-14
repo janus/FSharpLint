@@ -8,24 +8,33 @@ type TestConventionsStringFormating() =
     inherit TestAstNodeRuleBase.TestAstNodeRuleBase(StringFormating.rule)
 
     [<Test>]
-    member this.StringFormatingWithSprintfShouldNotProduceError() =
+    member this.StringInterpolationWithSprintfShouldNotProduceError() =
         this.Parse """
 let someString = sprintf "Hello %s" world"""
 
         Assert.IsTrue this.NoErrorsExist
 
+    [<Test>]
+    member this.StringInterpolationWithStringFormatShouldProduceError() =
+        this.Parse """
+let someString = String.Format("Hello {0}", world)"""
+
+        Assert.IsTrue this.ErrorsExist
+
 
     [<Test>]
-    member this.StringFormatingWithStringFormatShouldNotProduceError() =
+    member this.StringInterpolationWithStringFormatAndExternalTemplateShouldNotProduceError() =
         this.Parse """
-let someString = String.Format(someTemplate, world)"""
+let someFunction someTemplate =
+    Console.WriteLine(String.Format(someTemplate, world))"""
 
         Assert.IsTrue this.NoErrorsExist
 
 
     [<Test>]
-    member this.StringFormatingWithStringFormatShouldProduceError() =
+    member this.StringInterpolationWithStringFormatAndLocalVariableShouldProduceError() =
         this.Parse """
-let someString = String.Format("Hello {0}", world)"""
+let someTemplate = "Hello %s"
+let someString = String.Format(someTemplate, world)"""
 
         Assert.IsTrue this.ErrorsExist

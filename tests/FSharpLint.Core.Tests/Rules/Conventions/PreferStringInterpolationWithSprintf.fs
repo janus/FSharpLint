@@ -34,7 +34,7 @@ let someFunction someTemplate =
     [<Test>]
     member this.StringInterpolationWithStringFormatAndLocalVariableShouldProduceError() =
         this.Parse """
-let someTemplate = "Hello %s"
+let someTemplate = "Hello {0}"
 let someString = String.Format(someTemplate, world)"""
 
         Assert.IsTrue this.ErrorsExist

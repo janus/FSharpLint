@@ -33,7 +33,7 @@ let runner args =
     | AstNode.Binding(SynBinding(_, _, _, _, _, _, _, SynPat.Named(_, identifier, _, _, _), _, SynExpr.Const(SynConst.String(value, _, _), _), range, _)) when value.Contains "{0}" ->
         identifiers <- identifiers.Add(identifier.idText)
         Array.empty
-    | AstNode.ModuleDeclaration _ ->
+    | AstNode.ModuleOrNamespace _ ->
         identifiers <- Set.empty
         Array.empty
     | _ -> Array.empty

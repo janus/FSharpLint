@@ -30,8 +30,11 @@ let runner args =
               TypeChecks = List.empty }
             |> Array.singleton
         | _ -> Array.empty
-    | AstNode.Binding(SynBinding(_, _, _, _, _, _, _, SynPat.Named(_, identifier, _, _, _), _, SynExpr.Const(SynConst.String(_, _, _), _), range, _)) ->
+    | AstNode.Binding(SynBinding(_, _, _, _, _, _, _, SynPat.Named(_, identifier, _, _, _), _, SynExpr.Const(SynConst.String(value, _, _), _), range, _)) when value.Contains "{0}" ->
         identifiers <- identifiers.Add(identifier.idText)
+        Array.empty
+    | AstNode.ModuleDeclaration _ ->
+        identifiers <- Set.empty
         Array.empty
     | _ -> Array.empty
 

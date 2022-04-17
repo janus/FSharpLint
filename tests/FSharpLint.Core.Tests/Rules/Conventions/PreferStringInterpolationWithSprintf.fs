@@ -38,3 +38,15 @@ let someTemplate = "Hello {0}"
 let someString = String.Format(someTemplate, world)"""
 
         Assert.IsTrue this.ErrorsExist
+
+
+    [<Test>]
+    member this.StringInterpolationWithMultipleModuleWithSameVariableNameNotShouldProduceError() =
+        this.Parse """
+module Foo =
+    let someTemplate = "Hello, this is not for String.Format actually"
+module Bar =
+    let someFunction someTemplate =
+        Console.WriteLine(String.Format(someTemplate, "world"))"""
+
+        Assert.IsTrue this.NoErrorsExist

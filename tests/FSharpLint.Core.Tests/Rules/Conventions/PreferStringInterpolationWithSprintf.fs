@@ -50,3 +50,21 @@ module Bar =
         Console.WriteLine(String.Format(someTemplate, "world"))"""
 
         Assert.IsTrue this.NoErrorsExist
+
+
+    [<Test>]
+    member this.StringInterpolationWithSameVariableNameInMultipleLetNotShouldProduceError() =
+        this.Parse """
+module Bar =
+    let exampleFunction =
+        let someTemplate = "Hello, this is not for String.Format actually {0}"
+        someTemplate
+    let fooFunction () =
+        89
+    let someFunction someTemplate =
+        let returnConstInt () =
+            89
+        let label = "Test"
+        Console.WriteLine(String.Format(someTemplate, "world"))"""
+
+        Assert.IsTrue this.NoErrorsExist

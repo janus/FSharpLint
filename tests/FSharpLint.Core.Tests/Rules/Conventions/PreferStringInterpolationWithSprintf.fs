@@ -44,7 +44,7 @@ let someString = String.Format(someTemplate, world)"""
     member this.StringInterpolationWithMultipleModuleWithSameVariableNameNotShouldProduceError() =
         this.Parse """
 module Foo =
-    let someTemplate = "Hello, this is not for String.Format actually"
+    let someTemplate = "Hello, this is not for String.Format actually {0}"
 module Bar =
     let someFunction someTemplate =
         Console.WriteLine(String.Format(someTemplate, "world"))"""
@@ -65,6 +65,19 @@ module Bar =
         let returnConstInt () =
             89
         let label = "Test"
+        Console.WriteLine(String.Format(someTemplate, "world"))"""
+
+        Assert.IsTrue this.NoErrorsExist
+
+
+    [<Test>]
+    member this.StringInterpolationWithSameVariableNameinInneLetNotShouldProduceError() =
+        this.Parse """
+module Bar =
+    let exampleFunction someTemplate =
+        let someResults =
+            let someTemplate = "Hello, this is not for String.Format actually {0}"
+            someTemplate
         Console.WriteLine(String.Format(someTemplate, "world"))"""
 
         Assert.IsTrue this.NoErrorsExist

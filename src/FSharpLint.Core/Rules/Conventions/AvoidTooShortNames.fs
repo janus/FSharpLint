@@ -36,6 +36,7 @@ let private getParameterWithBelowMinimumLength (pats: SynPat list): (Ident * str
     loop pats Array.empty
 
 let private getIdentifiers (args:AstNodeRuleParams) =
+    printfn "%A" args.AstNode
     match args.AstNode with
     | AstNode.Binding(SynBinding(_, _, _, _, _, _, _, pattern, _, _, _, _)) ->
         match pattern with
@@ -59,10 +60,18 @@ let private getIdentifiers (args:AstNodeRuleParams) =
     | _ -> Array.empty
 
 let runner (args:AstNodeRuleParams) =
-    getIdentifiers args
-    |> Array.collect (fun (identifier, idText, typeCheck) ->
-        let suggestions = checkIdentifier identifier idText
-        suggestions |> Array.map (fun suggestion -> { suggestion with TypeChecks = Option.toList typeCheck }))
+    match args.AstNode with
+    | AstNode.Identifier([identifier], range) when identifier.Length = 1 ->
+        { Range = range
+          Message = Resources.GetString "RulesAvoidTooShortNamesError"
+          SuggestedFix = None
+          TypeChecks = List.empty }
+        |> Array.singleton
+    | _ ->
+        getIdentifiers args
+        |> Array.collect (fun (identifier, idText, typeCheck) ->
+            let suggestions = checkIdentifier identifier idText
+            suggestions |> Array.map (fun suggestion -> { suggestion with TypeChecks = Option.toList typeCheck }))
 
 let rule =
     { Name = "AvoidTooShortNames"

@@ -36,7 +36,6 @@ let private getParameterWithBelowMinimumLength (pats: SynPat list): (Ident * str
     loop pats Array.empty
 
 let private getIdentifiers (args:AstNodeRuleParams) =
-    printfn "%A" args.AstNode
     match args.AstNode with
     | AstNode.Binding(SynBinding(_, _, _, _, _, _, _, pattern, _, _, _, _)) ->
         match pattern with

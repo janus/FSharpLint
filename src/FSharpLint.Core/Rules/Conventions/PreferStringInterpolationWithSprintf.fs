@@ -43,8 +43,8 @@ let runner args =
                 let isVisible asts =
                     let rec loop asts =
                         match asts with
-                        | AstNode.Expression (SynExpr.LetOrUse (_, _, [bindings], _, _)) :: rest ->
-                            isNamedBinding bindings || loop rest
+                        | AstNode.Expression (SynExpr.LetOrUse (_, _, [binding], _, _)) :: rest ->
+                            isNamedBinding binding || loop rest
                         | _ :: rest -> loop rest
                         | [] -> false
                     loop asts

@@ -41,7 +41,7 @@ let someString = String.Format(someTemplate, world)"""
 
 
     [<Test>]
-    member this.StringInterpolationWithMultipleModuleWithSameVariableNameNotShouldProduceError() =
+    member this.StringInterpolationWithMultipleModuleWithSameVariableNameShouldNotProduceError() =
         this.Parse """
 module Foo =
     let someTemplate = "Hello, this is not for String.Format actually {0}"
@@ -53,7 +53,7 @@ module Bar =
 
 
     [<Test>]
-    member this.StringInterpolationWithSameVariableNameInMultipleLetNotShouldProduceError() =
+    member this.StringInterpolationWithSameVariableNameInInnerLetShouldNotProduceError() =
         this.Parse """
 module Bar =
     let exampleFunction =
@@ -71,7 +71,7 @@ module Bar =
 
 
     [<Test>]
-    member this.StringInterpolationWithSameVariableNameinInneLetNotShouldProduceError() =
+    member this.StringInterpolationWithSameVariableNameWithLocalLetShouldNotProduceError() =
         this.Parse """
 module Bar =
     let exampleFunction someTemplate =

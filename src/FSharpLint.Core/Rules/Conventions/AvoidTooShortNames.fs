@@ -51,6 +51,11 @@ let private getIdentifiers (args:AstNodeRuleParams) =
         | SynPat.Named(_, identifier, _, _, _) when identifier.idText.Length = 1 ->
             (identifier, identifier.idText, None) |> Array.singleton
         | _ -> Array.empty
+    | AstNode.Field(SynField(_, _, mayBe, _, _, _, _, _)) ->
+        match mayBe with
+        | Some identifier when identifier.idText.Length = 1 ->
+            (identifier, identifier.idText, None) |> Array.singleton
+        | _ -> Array.empty
     | _ -> Array.empty
 
 let runner (args:AstNodeRuleParams) =

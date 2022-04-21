@@ -110,6 +110,7 @@ let private checkIdentifierPart (config:NamingConfig) (identifier:Ident) (idText
     let casingError =
         match config.Naming with
         | Some NamingCase.PascalCase ->
+            // TODO: RulesNamingConventionsPascalCaseErrorSpecificAdviceForGenericTypesSpecificTypeName
             pascalCaseRule idText
             |> Option.map (formatError >> tryAddFix QuickFixes.toPascalCase)
         | Some NamingCase.CamelCase ->

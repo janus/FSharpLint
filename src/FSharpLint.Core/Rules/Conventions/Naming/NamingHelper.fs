@@ -98,6 +98,12 @@ let private suffixRule (suffix:string) (identifier:string) =
     if not (identifier.EndsWith suffix) then Some "RulesNamingConventionsSuffixError"
     else None
 
+let private generateError (identifier: Ident, message: string, suggestedFix) =
+    { Range = identifier.idRange
+      Message = message
+      SuggestedFix = Some suggestedFix
+      TypeChecks = [] }
+
 let private checkIdentifierPart (config:NamingConfig) (identifier:Ident) (idText:string) =
     let formatError errorName =
         String.Format(Resources.GetString errorName, idText)
@@ -149,11 +155,7 @@ let private checkIdentifierPart (config:NamingConfig) (identifier:Ident) (idText
 let private checkIdentifier (namingConfig:NamingConfig) (identifier:Ident) (idText:string) =
     if notOperator idText && isNotDoubleBackTickedIdent identifier then
         checkIdentifierPart namingConfig identifier idText
-        |> Array.map (fun (message, suggestedFix) ->
-            { Range = identifier.idRange
-              Message = message
-              SuggestedFix = Some suggestedFix
-              TypeChecks = [] })
+        |> Array.map (fun (message, suggestedFix) -> generateError (identifier, message, suggestedFix))
     else
         Array.empty
 
@@ -161,8 +163,18 @@ let toAstNodeRule (namingRule:RuleMetadata<NamingRuleConfig>) =
     let astNodeRunner (args:AstNodeRuleParams) =
         namingRule.RuleConfig.GetIdentifiersToCheck args
         |> Array.collect (fun (identifier, idText, typeCheck) ->
-            let suggestions = checkIdentifier namingRule.RuleConfig.Config identifier idText
-            suggestions |> Array.map (fun suggestion -> { suggestion with TypeChecks = Option.toList typeCheck }))
+            if namingRule.Name = "GenericTypesNames" && idText = "a" then
+                let formatError errorName =
+                    String.Format(Resources.GetString errorName, idText)
+
+                let tryAddFix message = (identifier, message, QuickFixes.toPascalCase identifier)
+
+                "RulesNamingConventionsPascalCaseErrorSpecificAdviceForGenericTypesSpecificTypeName"
+                |> formatError |> tryAddFix |> Array.singleton
+                |> Array.map generateError
+            else
+                let suggestions = checkIdentifier namingRule.RuleConfig.Config identifier idText
+                suggestions |> Array.map (fun suggestion -> { suggestion with TypeChecks = Option.toList typeCheck }))
 
     {
         RuleMetadata.Name = namingRule.Name

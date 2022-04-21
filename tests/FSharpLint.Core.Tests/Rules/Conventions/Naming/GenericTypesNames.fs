@@ -29,6 +29,12 @@ type Foo<'a> = Option<'a>
         Assert.IsTrue(this.ErrorExistsAt(2, 9))
 
     [<Test>]
+    member this.``generic type name shouldn't be camelCase (error message in typical case of 'a)``() =
+        this.Parse "type Foo<'a> = Option<'a>"
+        Assert.IsTrue this.ErrorsExist
+        Assert.IsTrue(this.ErrorMsg.Contains "Consider changing `'a` (camelCase) to `'T` (PascalCase).")
+
+    [<Test>]
     member this.``generic type names shouldn't be camelCase (2 generic types)``() =
         this.Parse """
 type Foo<'a, 'T> = Option<'a * 'T>

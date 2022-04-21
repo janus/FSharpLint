@@ -171,6 +171,9 @@
   <data name="RulesNamingConventionsPascalCaseError" xml:space="preserve">
     <value>Consider changing `{0}` to PascalCase.</value>
   </data>
+  <data name="RulesNamingConventionsPascalCaseErrorSpecificAdviceForGenericTypesSpecificTypeName" xml:space="preserve">
+    <value>Consider changing `'a` (camelCase) to `'T` (PascalCase).</value>
+  </data>
   <data name="RulesNamingConventionsUnderscoreError" xml:space="preserve">
     <value>Consider changing `{0}` to remove any underscores.</value>
   </data>

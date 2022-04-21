@@ -75,7 +75,10 @@ let isCamelCase (identifier:string) =
     else Char.IsLower withoutUnderscorePrefix.[0]
 
 let private pascalCaseRule (identifier:string) =
-    if not (isPascalCase identifier) then Some "RulesNamingConventionsPascalCaseError"
+    if not (isPascalCase identifier) then
+        if identifier = "a" then
+            Some "RulesNamingConventionsPascalCaseErrorSpecificAdviceForGenericTypesSpecificTypeName"
+        else Some "RulesNamingConventionsPascalCaseError"
     else None
 
 let private camelCaseRule (identifier:string) =
@@ -110,7 +113,6 @@ let private checkIdentifierPart (config:NamingConfig) (identifier:Ident) (idText
     let casingError =
         match config.Naming with
         | Some NamingCase.PascalCase ->
-            // TODO: RulesNamingConventionsPascalCaseErrorSpecificAdviceForGenericTypesSpecificTypeName
             pascalCaseRule idText
             |> Option.map (formatError >> tryAddFix QuickFixes.toPascalCase)
         | Some NamingCase.CamelCase ->

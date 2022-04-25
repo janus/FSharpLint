@@ -166,6 +166,15 @@ let f = fun _ -> ceil x
 
         this.AssertNoWarnings()
 
+    [<Test>]
+    member this.``No suggestion when Call a C# method expecting a parameter of type Action<XXX> with a fsharp fun``() =
+        this.Parse """
+Installer.add_LogMessage (fun x -> Log.Debug x)
+"""
+
+        this.AssertNoWarnings()
+
+
 [<TestFixture>]
 type TestConventionsCanBeReplacedWithComposition() =
     inherit TestAstNodeRuleBase.TestAstNodeRuleBase(CanBeReplacedWithComposition.rule)

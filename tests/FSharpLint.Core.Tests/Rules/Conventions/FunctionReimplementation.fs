@@ -272,3 +272,13 @@ let f = fun s1 s2 -> concat s1 s2 |> parse
 """
 
         this.AssertNoWarnings()
+
+    /// Regression test for: https://github.com/fsprojects/FSharpLint/issues/484
+    [<Test>]
+    member this.``No suggestion should be given for function composition for Active Patterns``() =
+        this.Parse """
+let (|Something|_|) (l: int list option) =
+    l |> Option.map (fun x -> Something (System.Collections.ObjectModel.ObservableCollection x))
+"""
+
+        this.AssertNoWarnings()

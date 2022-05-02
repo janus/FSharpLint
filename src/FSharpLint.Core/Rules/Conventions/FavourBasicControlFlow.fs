@@ -10,7 +10,9 @@ open FSharpLint.Framework.Rules
 let private isBasicControlFlow (synMatchClauses: List<SynMatchClause>) =
   let isFirstNamedIdentifier firstClause =
     match firstClause with
-    | SynMatchClause(SynPat.Named(_, _, _, _, _), _, _, _, _) -> true
+    | SynMatchClause(SynPat.Named(_, _, _, _, _), _, _, _, _)
+    | SynMatchClause(SynPat.Const( _, _), _, _, _, _)
+    | SynMatchClause(SynPat.LongIdent(LongIdentWithDots _, _, _, SynArgPats.Pats [], _, _), _, _, _, _) -> true
     | _ -> false
 
   let isLastTarget lastClause =

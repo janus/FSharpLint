@@ -59,7 +59,7 @@ type TestConventionsPascalCase() =
     member this.``camelCase should be flagged because it is configured as PascalCase``() =
         this.Parse """
 module Program =
-    let fooBar = 0
+    let internal fooBar = 0
 """
 
         Assert.IsTrue this.ErrorsExist

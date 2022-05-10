@@ -335,7 +335,7 @@ let pascalCaseConfig =
 
 [<TestFixture>]
 type TestConventionsPascalCase() =
-    inherit TestAstNodeRuleBase.TestAstNodeRuleBase(PublicValuesNames.rule pascalCaseConfig)
+    inherit TestAstNodeRuleBase.TestAstNodeRuleBase(PrivateValuesNames.rule pascalCaseConfig)
 
     [<Test>]
     member this.``camelCase should be flagged because it is configured as PascalCase``() =

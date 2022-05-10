@@ -326,3 +326,23 @@ module Program
   let internal Cat = 1"""
 
         this.AssertNoWarnings()
+
+let pascalCaseConfig =
+    { NamingConfig.Naming = Some NamingCase.PascalCase
+      Underscores = None
+      Prefix = None
+      Suffix = None }
+
+[<TestFixture>]
+type TestConventionsPascalCase() =
+    inherit TestAstNodeRuleBase.TestAstNodeRuleBase(PrivateValuesNames.rule pascalCaseConfig)
+
+    [<Test>]
+    member this.``camelCase should be flagged because it is configured as PascalCase``() =
+        this.Parse """
+module Program =
+    let private fooBar = 0
+"""
+
+        Assert.IsTrue this.ErrorsExist
+

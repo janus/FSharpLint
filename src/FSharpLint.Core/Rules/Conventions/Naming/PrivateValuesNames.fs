@@ -26,6 +26,9 @@ let private getValueOrFunctionIdents typeChecker accessibility pattern =
             else
                 Array.empty
         | None | Some _ -> Array.empty
+    | SynPat.Named(_, identifier, _, _, _) when accessibility = Accessibility.Private ->
+        (identifier, identifier.idText, None)
+        |> Array.singleton
     | _ -> Array.empty
 
 let private getIdentifiers (args:AstNodeRuleParams) =

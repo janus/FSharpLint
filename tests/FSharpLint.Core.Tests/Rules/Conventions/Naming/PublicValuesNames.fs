@@ -122,3 +122,14 @@ module Program =
 """
 
         this.AssertNoWarnings()
+
+    [<Test>]
+    member this.``camelCase should not be flagged because fooBar is private``() =
+        this.Parse """
+type SomeType() =
+    let fooBar = 0
+    member this.SomePublicMember() =
+         ()
+"""
+
+        this.AssertNoWarnings()

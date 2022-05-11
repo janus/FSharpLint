@@ -26,7 +26,7 @@ let private getValueOrFunctionIdents typeChecker isPublic pattern =
             else
                 Array.empty
         | None | Some _ -> Array.empty
-    | SynPat.Named(_, identifier, _, _, _)  when isPublic = Accessibility.Public ->
+    | SynPat.Named(_, identifier, _, _, _) when isPublic = Accessibility.Internal ->
         (identifier, identifier.idText, None)
         |> Array.singleton
     | _ -> Array.empty

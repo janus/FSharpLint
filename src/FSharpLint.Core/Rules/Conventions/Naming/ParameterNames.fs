@@ -17,6 +17,7 @@ let private getValueOrFunctionIdents typeChecker _accessibility pattern =
         typeChecker
         |> Option.map (fun checker -> isNotUnionCase checker ident)
         |> Option.defaultValue true
+
     match pattern with
     | SynPat.OptionalVal(ident, _) when not (isActivePattern ident) ->
         let checkNotUnionCase = checkNotUnionCase ident

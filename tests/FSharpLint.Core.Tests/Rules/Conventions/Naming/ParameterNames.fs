@@ -74,7 +74,7 @@ let __foo_bar = 0
         let expected = """
 module Program
 
-let __foobar = 0
+let __foo_bar = 0
 """
 
         this.Parse source
@@ -91,7 +91,7 @@ let foo _X = 0
         let expected = """
 module Program
 
-let foo _x = 0
+let foo _X = 0
 """
 
         this.Parse source

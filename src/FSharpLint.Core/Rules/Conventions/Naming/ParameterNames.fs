@@ -20,6 +20,7 @@ let private getValueOrFunctionIdents typeChecker _accessibility pattern =
 
     match pattern with
     | SynPat.Named(_, ident, _, _, _)
+    | SynPat.LongIdent(LongIdentWithDots ([ident], _), _, _, SynArgPats.Pats [], _, _)
     | SynPat.OptionalVal(ident, _) when not (isActivePattern ident) ->
         let checkNotUnionCase = checkNotUnionCase ident
         (ident, ident.idText, Some checkNotUnionCase) |> Array.singleton
@@ -39,7 +40,7 @@ let private getIdentifiers (args:AstNodeRuleParams) =
     | AstNode.Binding(SynBinding(access, _, _, _, attributes, _, valData, pattern, _, _, _, _)) ->
         if not (isLiteral attributes) then
             match identifierTypeFromValData valData with
-            | Value | Function ->
+            | Function ->
                 let accessibility = getAccessibility args.SyntaxArray args.NodeIndex
                 getPatternIdents accessibility (getValueOrFunctionIdents args.CheckInfo) true pattern
             | Member | Property ->

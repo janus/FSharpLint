@@ -363,3 +363,15 @@ module Program =
 """
 
         this.AssertNoWarnings()
+
+    [<Test>]
+    member this.``camelCase should be flagged because it is private``() =
+        this.Parse """
+type SomeType() =
+    let fooBar = 0
+    member this.SomePublicMember() =
+         ()
+"""
+
+        Assert.IsTrue this.ErrorsExist
+

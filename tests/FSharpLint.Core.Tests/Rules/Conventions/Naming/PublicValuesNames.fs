@@ -105,3 +105,20 @@ module Program =
 
         Assert.IsTrue this.ErrorsExist
 
+    [<Test>]
+    member this.``camelCase should not be flagged because it is internal``() =
+        this.Parse """
+module Program =
+    let internal fooBar = 0
+"""
+
+        this.AssertNoWarnings()
+
+    [<Test>]
+    member this.``camelCase should not be flagged because it is private``() =
+        this.Parse """
+module Program =
+    let private fooBar = 0
+"""
+
+        this.AssertNoWarnings()

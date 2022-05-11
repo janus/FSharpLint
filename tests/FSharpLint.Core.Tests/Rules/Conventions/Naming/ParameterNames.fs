@@ -96,3 +96,24 @@ let foo _x = 0
 
         this.Parse source
         Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+let pascalCaseConfig =
+    { NamingConfig.Naming = Some NamingCase.PascalCase
+      Underscores = None
+      Prefix = None
+      Suffix = None }
+
+[<TestFixture>]
+type TestConventionsPascalCase() =
+    inherit TestAstNodeRuleBase.TestAstNodeRuleBase(ParameterNames.rule pascalCaseConfig)
+
+    [<Test>]
+    member this.``camelCase should not be flagged because fooBar is not a parameter``() =
+        this.Parse """
+type SomeType() =
+    let fooBar = 0
+    member this.SomePublicMember() =
+         ()
+"""
+
+        this.AssertNoWarnings()

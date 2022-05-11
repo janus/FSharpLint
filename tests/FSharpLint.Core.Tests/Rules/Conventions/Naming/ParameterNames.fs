@@ -97,21 +97,21 @@ let foo _x = 0
         this.Parse source
         Assert.AreEqual(expected, this.ApplyQuickFix source)
 
-let pascalCaseConfig =
-    { NamingConfig.Naming = Some NamingCase.PascalCase
+let camelCaseConfig =
+    { NamingConfig.Naming = Some NamingCase.CamelCase
       Underscores = None
       Prefix = None
       Suffix = None }
 
 [<TestFixture>]
-type TestConventionsPascalCase() =
-    inherit TestAstNodeRuleBase.TestAstNodeRuleBase(ParameterNames.rule pascalCaseConfig)
+type TestConventionsCamelCase() =
+    inherit TestAstNodeRuleBase.TestAstNodeRuleBase(ParameterNames.rule camelCaseConfig)
 
     [<Test>]
-    member this.``camelCase should not be flagged because fooBar is not a parameter``() =
+    member this.``PascalCase should not be flagged because FooBar is not a parameter``() =
         this.Parse """
 type SomeType() =
-    let fooBar = 0
+    let FooBar = 0
     member this.SomePublicMember() =
         ()
 """
@@ -119,11 +119,11 @@ type SomeType() =
         this.AssertNoWarnings()
 
     [<Test>]
-    member this.``camelCase should be flagged because bar is parameter``() =
+    member this.``PascalCase should be flagged because Bar is parameter``() =
         this.Parse """
 module SomeModule =
-    let Foo bar =
+    let Foo Bar =
         0
 """
 
-         Assert.IsTrue this.ErrorsExist
+        Assert.IsTrue this.ErrorsExist

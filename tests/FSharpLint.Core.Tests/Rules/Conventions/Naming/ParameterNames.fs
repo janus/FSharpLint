@@ -113,7 +113,17 @@ type TestConventionsPascalCase() =
 type SomeType() =
     let fooBar = 0
     member this.SomePublicMember() =
-         ()
+        ()
 """
 
         this.AssertNoWarnings()
+
+    [<Test>]
+    member this.``camelCase should be flagged because bar is parameter``() =
+        this.Parse """
+module SomeModule =
+    let Foo bar =
+        0
+"""
+
+         Assert.IsTrue this.ErrorsExist

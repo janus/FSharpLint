@@ -20,6 +20,7 @@ let private getValueOrFunctionIdents typeChecker _accessibility pattern =
 
     match pattern with
     | SynPat.Named(_, ident, _, _, _)
+    | SynPat.LongIdent(LongIdentWithDots ([ident], _), _, _, SynArgPats.Pats [], _, _)
     | SynPat.OptionalVal(ident, _) when not (isActivePattern ident) ->
         let checkNotUnionCase = checkNotUnionCase ident
         (ident, ident.idText, Some checkNotUnionCase) |> Array.singleton

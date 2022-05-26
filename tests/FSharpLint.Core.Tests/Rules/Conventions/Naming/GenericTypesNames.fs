@@ -26,7 +26,7 @@ type Foo<'a> = Option<'a>
 type Foo<'T> = Option<'T>
     """
         Assert.IsTrue(this.ErrorsExist)
-        Assert.IsTrue(this.ErrorExistsAt(2, 9))
+        Assert.IsTrue(this.ErrorExistsOnLine(2))
 
     [<Test>]
     member this.``generic type names shouldn't be PascalCase (2 generic types)``() =
@@ -34,7 +34,7 @@ type Foo<'T> = Option<'T>
 type Foo<'a, 'T> = Option<'a * 'T>
 """
         Assert.IsTrue(this.ErrorsExist)
-        Assert.IsTrue(this.ErrorExistsAt(2, 9))
+        Assert.IsTrue(this.ErrorExistsOnLine(2))
 
     [<Test>]
     member this.``generic type names shouldn't be PascalCase (2 generic types with different order)``() =
@@ -42,7 +42,7 @@ type Foo<'a, 'T> = Option<'a * 'T>
 type Foo<'T, 'a> = Option<'T * 'a>
 """
         Assert.IsTrue(this.ErrorsExist)
-        Assert.IsTrue(this.ErrorExistsAt(2, 13))
+        Assert.IsTrue(this.ErrorExistsOnLine(2))
 
     [<Test>]
     member this.``generic type names are camelCase``() =

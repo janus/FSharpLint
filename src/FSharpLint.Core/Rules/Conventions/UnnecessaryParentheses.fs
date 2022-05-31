@@ -9,12 +9,15 @@ open FSharpLint.Framework.Suggestion
 
 let private runner (args: AstNodeRuleParams) =
     match args.AstNode with
-    | AstNode.Expression(SynExpr.IfThenElse(SynExpr.Paren (_, _, _, _), _, _, _, _, _, range)) ->
-        { Range = range
-          Message = Resources.GetString("RulesUnnecessaryParenthesesError")
-          SuggestedFix = None
-          TypeChecks = List.Empty }
-        |> Array.singleton
+    | AstNode.Expression(SynExpr.IfThenElse(SynExpr.Paren(expression, _, _, _), _, _, _, _, _, range)) ->
+        match expression with
+        | SynExpr.App(_, _, _, _, _) -> Array.empty
+        | _ ->
+            { Range = range
+              Message = Resources.GetString("RulesUnnecessaryParenthesesError")
+              SuggestedFix = None
+              TypeChecks = List.Empty }
+            |> Array.singleton
     | _ -> Array.empty
 
 let rule =

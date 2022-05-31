@@ -17,3 +17,8 @@ type TestConventionsUnnecessaryParentheses() =
     member this.``unnecessary parentheses in the if conditional expression``() =
         this.Parse "if (foo) then bar else baz"
         Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``prefer conservative rule which means unnecessary parentheses is not flagged for function application``() =
+        this.Parse "if (foo foobar) then bar else baz"
+        Assert.IsTrue this.NoErrorsExist

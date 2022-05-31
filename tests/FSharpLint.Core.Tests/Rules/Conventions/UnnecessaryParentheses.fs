@@ -32,3 +32,12 @@ type TestConventionsUnnecessaryParentheses() =
         this.Parse source
         Assert.AreEqual(expected, this.ApplyQuickFix source)
 
+    [<Test>]
+    member this.``no quick fix because we prefer the rule to be conservative``() =
+        let source = "if (foo foobar) then bar else baz"
+
+        let expected = "if (foo foobar) then bar else baz"
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+

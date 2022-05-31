@@ -345,4 +345,7 @@
   <data name="RulesFavourStaticEmptyFieldsForArray" xml:space="preserve">
     <value>Consider using 'Array.empty' instead.</value>
   </data>
+  <data name="RulesUnnecessaryParenthesesError" xml:space="preserve">
+    <value>Usage of parentheses around conditional expression is unnecessary.</value>
+  </data>
 </root>

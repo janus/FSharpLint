@@ -80,3 +80,43 @@ if foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 elif (bazzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz) then foobar
 """
         Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``quick fix for single identifiers in elif expressions``() =
+        let source = """
+if foo then bar
+elif (baz) then foobar
+"""
+        let expected = """
+if foo then bar
+elif baz then foobar
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``no quick fix because parentheses shouldn't be removed (1)``() =
+        let source = """
+if foo then (bar)
+elif baz then foobar
+"""
+        let expected = """
+if foo then (bar)
+elif baz then foobar
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``no quick fix because parentheses shouldn't be removed (2)``() =
+        let source = """
+if foo then bar
+elif baz then (foobar)
+"""
+        let expected = """
+if foo then bar
+elif baz then (foobar)
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+

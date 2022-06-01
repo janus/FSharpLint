@@ -120,3 +120,56 @@ elif baz then (foobar)
         this.Parse source
         Assert.AreEqual(expected, this.ApplyQuickFix source)
 
+    [<Test>]
+    member this.``parentheses in discriminated unions are unnecessary (1)``() =
+        this.Parse """
+match foo with
+| None -> ()
+| Some(bar) -> ()
+"""
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``parentheses in discriminated unions are unnecessary (2)``() =
+        this.Parse """
+match foo with
+| Something -> ()
+| OtherThing(bar) -> ()
+"""
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``parentheses in discriminated unions are unnecessary (3)``() =
+        this.Parse """
+match foo with
+| Something -> ()
+| OtherThing(bar), baz -> ()
+"""
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``parentheses in discriminated unions should be kept (1)``() =
+        this.Parse """
+match foo with
+| Something -> ()
+| OtherThing (bar, baz) -> ()
+"""
+        Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.``parentheses in discriminated unions should be kept (2)``() =
+        this.Parse """
+match foo with
+| Something -> ()
+| OtherThing (AndLastThing bar) -> ()
+"""
+        Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.``parentheses in discriminated unions should be kept (3)``() =
+        this.Parse """
+match foo with
+| Something -> ()
+| OtherThing ({ Bar = Baz.FooBar } as fooBarBaz) -> ()
+"""
+        Assert.IsTrue this.NoErrorsExist

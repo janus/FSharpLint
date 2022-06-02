@@ -173,3 +173,63 @@ match foo with
 | OtherThing ({ Bar = Baz.FooBar } as fooBarBaz) -> ()
 """
         Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.``quick fix for unnecessary parentheses in discriminated unions (1)``() =
+        let source = """
+match foo with
+| None -> ()
+| Some(bar) -> ()
+"""
+        let expected = """
+match foo with
+| None -> ()
+| Some bar -> ()
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for unnecessary parentheses in discriminated unions (2)``() =
+        let source = """
+match foo with
+| Something -> ()
+| OtherThing(bar) -> ()
+"""
+        let expected = """
+match foo with
+| Something -> ()
+| OtherThing bar -> ()
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for unnecessary parentheses in discriminated unions (3)``() =
+        let source = """
+match foo with
+| Something -> ()
+| OtherThing(bar), baz -> ()
+"""
+        let expected = """
+match foo with
+| Something -> ()
+| OtherThing bar, baz -> ()
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``no quick fix because parentheses in discriminated unions should be kept (1)``() =
+        let source = """
+match foo with
+| Something -> ()
+| OtherThing (bar, baz) -> ()
+"""
+        let expected = """
+match foo with
+| Something -> ()
+| OtherThing (bar, baz) -> ()
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)

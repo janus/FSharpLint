@@ -233,3 +233,44 @@ match foo with
 """
         this.Parse source
         Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``parentheses around lambda's parameters should be removed (1)``() =
+        this.Parse "(fun (foo) -> bar foo) |> ignore"
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``parentheses around lambda's parameters should be removed (2)``() =
+        this.Parse "(fun foo (bar) -> baz foo) |> ignore"
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``parentheses around lambda's parameters should be removed (3)``() =
+        this.Parse """
+module Foo =
+    let sum (a) (b) = a + b
+"""
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``parentheses around lambda's parameters should be kept (1)``() =
+        this.Parse "(fun (foo: bar) -> baz foo) |> ignore"
+        Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.``parentheses around lambda's parameters should be kept (2)``() =
+        this.Parse "(fun (foo, bar) -> baz foo, baz bar) |> ignore"
+        Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.``parentheses around lambda's parameters should be kept (3)``() =
+        this.Parse "(fun (foo: bar) (baz: foobar) -> foobarbaz foo baz) |> ignore"
+        Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.``parentheses in typed params should be kept``() =
+        this.Parse """
+module Foo =
+    let sum (a: int) (b: int) = a + b
+"""
+        Assert.IsTrue this.NoErrorsExist

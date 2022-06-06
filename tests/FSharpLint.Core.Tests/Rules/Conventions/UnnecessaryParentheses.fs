@@ -274,3 +274,44 @@ module Foo =
     let sum (a: int) (b: int) = a + b
 """
         Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.``quick fix for parentheses around lambda's parameters (1)``() =
+        let source = "(fun (foo) -> bar foo) |> ignore"
+        let expected = "(fun foo -> bar foo) |> ignore"
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for parentheses around lambda's parameters (2)``() =
+        let source = "(fun foo (bar) -> baz foo) |> ignore"
+        let expected = "(fun foo bar -> baz foo) |> ignore"
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for parentheses around lambda's parameters (3)``() =
+        let source = """
+module Foo =
+    let sum (a) (b) = a + b
+"""
+        let expected = """
+module Foo =
+    let sum a (b) = a + b
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``no quick fix for parentheses in typed params``() =
+        let source = """
+module Foo =
+    let sum (a: int) (b: int) = a + b
+"""
+        let expected = """
+module Foo =
+    let sum (a: int) (b: int) = a + b
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)

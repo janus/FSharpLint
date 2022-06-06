@@ -29,6 +29,20 @@ let private traversePattern patterns text =
 
     loop patterns
 
+let private traverseLambdaPattern patterns =
+    let rec loop patterns =
+        match patterns with
+        | SynPat.Paren(SynPat.Named(SynPat.Wild _, _, _, _, range), _) :: _ ->
+            { Range = range
+              Message = Resources.GetString("RulesUnnecessaryParenthesesError")
+              SuggestedFix = None
+              TypeChecks = List.Empty }
+            |> Array.singleton
+        | _ :: rest -> loop rest
+        | [] -> Array.empty
+
+    loop patterns
+
 let private runner (args: AstNodeRuleParams) =
     match args.AstNode with
     | AstNode.Expression(SynExpr.IfThenElse(SynExpr.Paren(expression, _, _, range), _, _, _, _, _, _)) ->
@@ -48,6 +62,10 @@ let private runner (args: AstNodeRuleParams) =
         |> Array.singleton
     | AstNode.Match(SynMatchClause(SynPat.Tuple(_, patterns, _), _, _, _, _)) ->
         traversePattern patterns args.FileContent
+    | AstNode.Expression(SynExpr.Lambda(_, _, _, _, Some(patterns, _), _)) ->
+        traverseLambdaPattern patterns
+    | AstNode.Binding(SynBinding(_, _, _, _, _, _, _, SynPat.LongIdent(LongIdentWithDots(_, _), _, _,SynArgPats.Pats(patterns), _, _), _, _, _, _)) ->
+        traverseLambdaPattern patterns
     | _ -> Array.empty
 
 let rule =

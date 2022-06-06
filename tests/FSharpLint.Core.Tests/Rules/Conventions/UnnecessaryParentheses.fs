@@ -315,3 +315,21 @@ module Foo =
 
         this.Parse source
         Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``parentheses in discriminated unions are unnecessary (4)``() =
+        this.Parse """
+match baz with
+| Something -> ()
+| OtherThing(_) -> ()
+"""
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``parentheses in discriminated unions are unnecessary (5)``() =
+        this.Parse """
+match baz with
+| Something -> ()
+| (_) -> ()
+"""
+        Assert.IsTrue this.ErrorsExist

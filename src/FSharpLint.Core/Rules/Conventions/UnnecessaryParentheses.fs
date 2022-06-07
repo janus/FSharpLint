@@ -15,6 +15,19 @@ let private generateFix (text:string) range = lazy(
             toText <- toText.Replace('(', ' ')
         { FromText = fromText; FromRange = range; ToText = toText }))
 
+let private generateRaiseFix (text:string) range = lazy(
+    ExpressionUtilities.tryFindTextOfRange range text
+    |> Option.map (fun fromText ->
+        let mutable toText = fromText.TrimStart('(')
+        let found = toText.LastIndexOf(')')
+        if toText.Length - 1 = found then
+            toText <- toText.Substring(0, found)
+        if toText.Contains("new") || toText.Contains(',') || toText.Contains('(') || toText.Contains(' ') then
+            toText <- " <| " + toText
+        else
+            toText <- " " + toText
+        { FromText = fromText; FromRange = range; ToText = toText }))
+
 let private traversePattern patterns text =
     let rec loop patterns warnings =
         match patterns with
@@ -73,10 +86,10 @@ let private runner (args: AstNodeRuleParams) =
           SuggestedFix = Some (generateFix args.FileContent range)
           TypeChecks = List.Empty }
         |> Array.singleton
-    | AstNode.Expression(SynExpr.App(_, _, identifier, SynExpr.Paren(_, _, _, range), _)) ->
+    | AstNode.Expression(SynExpr.App(_, _, SynExpr.Ident identifier, SynExpr.Paren(_, _, _, range), _)) when identifier.idText = "raise" ->
         { Range = range
           Message = Resources.GetString("RulesUnnecessaryParenthesesError")
-          SuggestedFix = Some (generateFix args.FileContent range)
+          SuggestedFix = Some (generateRaiseFix args.FileContent range)
           TypeChecks = List.Empty }
         |> Array.singleton
     | _ -> Array.empty

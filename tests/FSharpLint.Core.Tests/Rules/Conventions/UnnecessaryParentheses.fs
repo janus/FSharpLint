@@ -445,7 +445,7 @@ let CalculateSum (file: FileInfo) =
         let expected = """
 let CalculateSum (file: FileInfo) =
     if not (file.Exists) then
-        raise <| new FileNotFoundException("File not found", file.FullName)
+        raise  <| new FileNotFoundException("File not found", file.FullName)
     ()
 """
         this.Parse source

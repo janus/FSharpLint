@@ -398,3 +398,55 @@ let CalculateSum (file: FileInfo) =
     ()
 """
         Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``quick fix for parentheses in function call``() =
+        let source = "raise(InvalidPassword)"
+        let expected = "raise InvalidPassword"
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``no quick fix for no parentheses in function call``() =
+        let source = "raise InvalidPassword"
+        let expected = "raise InvalidPassword"
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for between arguments and function call``() =
+        let source = "raise(AddressWithInvalidChecksum None)"
+        let expected = "raise <| AddressWithInvalidChecksum None"
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for between argument(inner function call) and function call``() =
+        let source = """raise(Exception("foo"))"""
+        let expected = """raise <| Exception("foo")"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for between argument(inner function call with two arguments) and function call``() =
+        let source = "raise(Exception(ex.ToString(), (ex.InnerException)))"
+        let expected = "raise <| Exception(ex.ToString(), (ex.InnerException))"
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for using the new keyword``() =
+        let source = """
+let CalculateSum (file: FileInfo) =
+    if not (file.Exists) then
+        raise (new FileNotFoundException("File not found", file.FullName))
+    ()
+"""
+        let expected = """
+let CalculateSum (file: FileInfo) =
+    if not (file.Exists) then
+        raise <| new FileNotFoundException("File not found", file.FullName)
+    ()
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)

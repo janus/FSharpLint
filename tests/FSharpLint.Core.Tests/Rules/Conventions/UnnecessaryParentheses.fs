@@ -333,3 +333,33 @@ match baz with
 | (_) -> ()
 """
         Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``quick fix for parentheses in discriminated unions are unnecessary (4)``() =
+        let source = """
+match baz with
+| Something -> ()
+| OtherThing(_) -> ()
+"""
+        let expected = """
+match baz with
+| Something -> ()
+| OtherThing _ -> ()
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for parentheses in discriminated unions are unnecessary (5)``() =
+        let source = """
+match baz with
+| Something -> ()
+| (_) -> ()
+"""
+        let expected = """
+match baz with
+| Something -> ()
+| _ -> ()
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)

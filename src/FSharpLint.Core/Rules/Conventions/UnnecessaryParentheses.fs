@@ -70,7 +70,7 @@ let private runner (args: AstNodeRuleParams) =
     | AstNode.Match(SynMatchClause(SynPat.Paren(SynPat.Wild _, range), _, _, _, _)) ->
         { Range = range
           Message = Resources.GetString("RulesUnnecessaryParenthesesError")
-          SuggestedFix = None
+          SuggestedFix = Some (generateFix args.FileContent range)
           TypeChecks = List.Empty }
         |> Array.singleton
     | _ -> Array.empty

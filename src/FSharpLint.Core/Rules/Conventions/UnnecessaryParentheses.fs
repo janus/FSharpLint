@@ -54,7 +54,8 @@ let private runner (args: AstNodeRuleParams) =
               SuggestedFix = Some (generateFix args.FileContent range)
               TypeChecks = List.Empty }
             |> Array.singleton
-    | AstNode.Match(SynMatchClause(SynPat.LongIdent(LongIdentWithDots(_, _), _, _,SynArgPats.Pats([SynPat.Paren(SynPat.Named(SynPat.Wild _, _, _, _, _), _)]), _, range), _, _, _, _)) ->
+    | AstNode.Match(SynMatchClause(SynPat.LongIdent(LongIdentWithDots(_, _), _, _,SynArgPats.Pats([SynPat.Paren(SynPat.Named(SynPat.Wild _, _, _, _, _), _)]), _, range), _, _, _, _))
+    | AstNode.Match(SynMatchClause(SynPat.LongIdent(LongIdentWithDots(_, _), _, _,SynArgPats.Pats([SynPat.Paren(SynPat.Wild _, _)]), _, range), _, _, _, _)) ->
         { Range = range
           Message = Resources.GetString("RulesUnnecessaryParenthesesError")
           SuggestedFix = Some (generateFix args.FileContent range)
@@ -66,6 +67,12 @@ let private runner (args: AstNodeRuleParams) =
         traverseLambdaPattern patterns args.FileContent
     | AstNode.Binding(SynBinding(_, _, _, _, _, _, _, SynPat.LongIdent(LongIdentWithDots(_, _), _, _,SynArgPats.Pats(patterns), _, _), _, _, _, _)) ->
         traverseLambdaPattern patterns args.FileContent
+    | AstNode.Match(SynMatchClause(SynPat.Paren(SynPat.Wild _, range), _, _, _, _)) ->
+        { Range = range
+          Message = Resources.GetString("RulesUnnecessaryParenthesesError")
+          SuggestedFix = None
+          TypeChecks = List.Empty }
+        |> Array.singleton
     | _ -> Array.empty
 
 let rule =

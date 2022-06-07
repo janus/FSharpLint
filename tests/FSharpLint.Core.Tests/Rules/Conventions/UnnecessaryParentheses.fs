@@ -363,3 +363,38 @@ match baz with
 """
         this.Parse source
         Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``parentheses in function call should be removed``() =
+        this.Parse "raise(InvalidPassword)"
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``no parentheses in function call``() =
+        this.Parse "raise InvalidPassword"
+        Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.``parentheses should be removed and left pipe introduced between arguments and function call``() =
+        this.Parse "raise(AddressWithInvalidChecksum None)"
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``parentheses should be removed and left pipe introduced between argument(inner function call)  and function call``() =
+        this.Parse """raise(Exception("foo"))"""
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``parentheses should be removed and left pipe introduced between argument(inner function call with two arguments)  and function call``() =
+        this.Parse "raise(Exception(ex.ToString(), (ex.InnerException)))"
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``using the new keyword``() =
+        this.Parse """
+let CalculateSum (file: FileInfo) =
+    if not (file.Exists) then
+        raise (new FileNotFoundException("File not found", file.FullName))
+    ()
+"""
+        Assert.IsTrue this.ErrorsExist

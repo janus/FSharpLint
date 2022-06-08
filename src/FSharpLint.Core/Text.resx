@@ -345,4 +345,7 @@
   <data name="RulesFavourStaticEmptyFieldsForArray" xml:space="preserve">
     <value>Consider using 'Array.empty' instead.</value>
   </data>
+  <data name="RulesGenericTypesNormalizationError" xml:space="preserve">
+    <value>Consider using Generic type style.</value>
+  </data>
 </root>

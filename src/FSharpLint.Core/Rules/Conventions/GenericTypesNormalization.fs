@@ -9,6 +9,12 @@ open FSharpLint.Framework.Suggestion
 
 let private runner (args: AstNodeRuleParams) =
     match args.AstNode with
+    | AstNode.Type(SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), _, _types, _, _, _, range)) ->
+        { Range = range
+          Message = Resources.GetString("RulesGenericTypesNormalizationError")
+          SuggestedFix = None
+          TypeChecks = List.Empty }
+        |> Array.singleton
     | _ -> Array.empty
 
 let rule =

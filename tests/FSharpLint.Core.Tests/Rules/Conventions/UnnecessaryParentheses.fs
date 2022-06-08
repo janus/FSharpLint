@@ -524,3 +524,49 @@ let GrabTheFirstStringBeforeTheFirstColon () =
     }
 """
         Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.``quick fix for unneeded parentheses in for loop``() =
+        let source = """
+let private GrabTheFirstStringBeforeTheFirstColon (lines: seq<string>) =
+    seq {
+        for line in (lines) do
+            yield (line.Split([| ":" |], StringSplitOptions.RemoveEmptyEntries)).[0]
+    }
+"""
+        let expected = """
+let private GrabTheFirstStringBeforeTheFirstColon (lines: seq<string>) =
+    seq {
+        for line in lines do
+            yield (line.Split([| ":" |], StringSplitOptions.RemoveEmptyEntries)).[0]
+    }
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``no quick fix in for loop when parentheses is not redundant``() =
+        let source = """
+let GrabTheFirstStringBeforeTheFirstColon () =
+    seq {
+        for line in (foo ()) do
+            yield line
+        for line in (foo bar) do
+            yield line
+        for line in (foo bar baz) do
+            yield line
+    }
+"""
+        let expected = """
+let GrabTheFirstStringBeforeTheFirstColon () =
+    seq {
+        for line in (foo ()) do
+            yield line
+        for line in (foo bar) do
+            yield line
+        for line in (foo bar baz) do
+            yield line
+    }
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)

@@ -31,7 +31,7 @@ let private generateRaiseFix (text:string) range = lazy(
 let private traversePattern patterns text =
     let rec loop patterns warnings =
         match patterns with
-        | SynPat.LongIdent(LongIdentWithDots([identifier], _), _, _,SynArgPats.Pats([SynPat.Paren(SynPat.Named(SynPat.Wild _, _, _, _, _), _)]), _, range) :: rest ->
+        | SynPat.LongIdent(LongIdentWithDots(_, _), _, _,SynArgPats.Pats([SynPat.Paren(SynPat.Named(SynPat.Wild _, _, _, _, _), _)]), _, range) :: rest ->
             let warning = { Range = range
                             Message = Resources.GetString("RulesUnnecessaryParenthesesError")
                             SuggestedFix = Some (generateFix text range)
@@ -101,7 +101,7 @@ let private runner (args: AstNodeRuleParams) =
     | AstNode.Expression(SynExpr.ForEach(_, _, _, _, SynExpr.Paren(SynExpr.Ident _, _, _, range), _, _)) ->
         { Range = range
           Message = Resources.GetString("RulesUnnecessaryParenthesesError")
-          SuggestedFix = None
+          SuggestedFix = Some (generateFix args.FileContent range)
           TypeChecks = List.Empty }
         |> Array.singleton
     | _ -> Array.empty

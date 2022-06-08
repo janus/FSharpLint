@@ -468,3 +468,33 @@ match foo with
 | _ -> ()
 """
         Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.``quick fix for unneeded parentheses in match clause if tuple has only one element and also not DU``() =
+        let source = """
+match foo with
+| (Bar) -> ()
+| _ -> ()
+"""
+        let expected = """
+match foo with
+| Bar -> ()
+| _ -> ()
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``no quick fix for keep parentheses in match clause if tuple is a DU``() =
+        let source = """
+match foo with
+| (Bar baz) -> ()
+| _ -> ()
+"""
+        let expected = """
+match foo with
+| (Bar baz) -> ()
+| _ -> ()
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)

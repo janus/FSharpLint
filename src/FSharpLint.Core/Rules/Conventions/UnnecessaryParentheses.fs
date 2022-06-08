@@ -92,10 +92,10 @@ let private runner (args: AstNodeRuleParams) =
           SuggestedFix = Some (generateRaiseFix args.FileContent range)
           TypeChecks = List.Empty }
         |> Array.singleton
-    | AstNode.Match(SynMatchClause(SynPat.Paren(SynPat.LongIdent(LongIdentWithDots(identifiers, _), _, _, SynArgPats.Pats([]), _, range), _), _, _, _, _)) when identifiers.Length = 1 ->
+    | AstNode.Match(SynMatchClause(SynPat.Paren(SynPat.LongIdent(LongIdentWithDots(identifiers, _), _, _, SynArgPats.Pats([]), _, _), range), _, _, _, _)) when identifiers.Length = 1 ->
         { Range = range
           Message = Resources.GetString("RulesUnnecessaryParenthesesError")
-          SuggestedFix = None
+          SuggestedFix = Some (generateFix args.FileContent range)
           TypeChecks = List.Empty }
         |> Array.singleton
     | _ -> Array.empty

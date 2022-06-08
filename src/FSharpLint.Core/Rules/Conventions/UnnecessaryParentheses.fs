@@ -98,6 +98,12 @@ let private runner (args: AstNodeRuleParams) =
           SuggestedFix = Some (generateFix args.FileContent range)
           TypeChecks = List.Empty }
         |> Array.singleton
+    | AstNode.Expression(SynExpr.ForEach(_, _, _, _, SynExpr.Paren(SynExpr.Ident _, _, _, range), _, _)) ->
+        { Range = range
+          Message = Resources.GetString("RulesUnnecessaryParenthesesError")
+          SuggestedFix = None
+          TypeChecks = List.Empty }
+        |> Array.singleton
     | _ -> Array.empty
 
 let rule =

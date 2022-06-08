@@ -450,3 +450,21 @@ let CalculateSum (file: FileInfo) =
 """
         this.Parse source
         Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``remove unneeded parentheses in match clause if tuple has only one element and also not DU``() =
+        this.Parse """
+match foo with
+| (Bar) -> ()
+| _ -> ()
+"""
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``keep parentheses in match clause if tuple is a DU``() =
+        this.Parse """
+match foo with
+| (Bar baz) -> ()
+| _ -> ()
+"""
+        Assert.IsTrue this.NoErrorsExist

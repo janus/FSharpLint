@@ -498,3 +498,29 @@ match foo with
 """
         this.Parse source
         Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``Remove unneeded parentheses in for loop``() =
+        this.Parse """
+let private GrabTheFirstStringBeforeTheFirstColon (lines: seq<string>) =
+    seq {
+        for line in (lines) do
+            yield (line.Split([| ":" |], StringSplitOptions.RemoveEmptyEntries)).[0]
+    }
+"""
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``keep parentheses in for loop when it is not redundant``() =
+        this.Parse """
+let GrabTheFirstStringBeforeTheFirstColon () =
+    seq {
+        for line in (foo ()) do
+            yield line
+        for line in (foo bar) do
+            yield line
+        for line in (foo bar baz) do
+            yield line
+    }
+"""
+        Assert.IsTrue this.NoErrorsExist

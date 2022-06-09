@@ -15,6 +15,12 @@ let private runner (args: AstNodeRuleParams) =
           SuggestedFix = None
           TypeChecks = List.Empty }
         |> Array.singleton
+    | AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo(_, _, _, _, _, false, _, range), _, _, _, _)) ->
+        { Range = range
+          Message = Resources.GetString("RulesGenericTypesNormalizationError")
+          SuggestedFix = None
+          TypeChecks = List.Empty }
+        |> Array.singleton
     | _ -> Array.empty
 
 let rule =

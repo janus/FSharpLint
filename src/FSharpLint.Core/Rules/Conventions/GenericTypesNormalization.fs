@@ -9,13 +9,13 @@ open FSharpLint.Framework.Suggestion
 
 let private runner (args: AstNodeRuleParams) =
     match args.AstNode with
-    | AstNode.Type(SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), _, _types, _, _, _, range)) ->
+    | AstNode.Type(SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), None, _types, _, _, _, range)) ->
         { Range = range
           Message = Resources.GetString("RulesGenericTypesNormalizationError")
           SuggestedFix = None
           TypeChecks = List.Empty }
         |> Array.singleton
-    | AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo(_, _, _, _, _, false, _, range), _, _, _, _)) ->
+    | AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo(_, [_typeDec], _, _, _, false, _, range), _, _, _, _)) ->
         { Range = range
           Message = Resources.GetString("RulesGenericTypesNormalizationError")
           SuggestedFix = None

@@ -142,3 +142,159 @@ type DGML =
 """
 
         Assert.IsTrue this.NoErrorsExist
+
+    [<Test>]
+    member this.``quick fix for generic type style (1)``() =
+        let source = "type 'T Foo when 'T :> IDisposable = { Bar: 'T }"
+        let expected = "type Foo<'T when 'T :> IDisposable> = { Bar: 'T }"
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix generic type style should be improved (2)``() =
+        let source =  "type Foo<'T> = Bar of 'T list"
+        let expected = "type Foo<'T> = Bar of list<'T>"
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for string * string list type signature in functions``() =
+        let source = """
+let MSBuildWithProjectProperties outputPath (targets: string) (properties: (string -> string) * string list) projects = doingSomeStuff()
+"""
+
+        let expected = """
+let MSBuildWithProjectProperties outputPath (targets: string) (properties: (string -> string) * list<string>) projects = doingSomeStuff()
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for string * string list type signature in unions``() =
+        let source = """
+type DGML =
+    | Node of string
+    | Link of string * string * (string option)
+"""
+
+        let expected = """
+type DGML =
+    | Node of string
+    | Link of string * string * (option<string>)
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for (string option * Node) list type signature``() =
+        let source =  """
+type Node =
+    { Name: string;
+      NextNodes: (string option * Node) list }
+"""
+
+        let expected =  """
+type Node =
+    { Name: string;
+      NextNodes: list<(option<string> * Node)> }
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for (string * string) list type signature in records``() =
+        let source = """
+type MSBuildParams =
+    { Properties: list<(string * string)>
+      MaxCpuCount: int option option
+      ToolsVersion: string option
+      Verbosity: MSBuildVerbosity option
+      FileLoggers: MSBuildFileLoggerConfig list option }
+"""
+
+        let expected = """
+type MSBuildParams =
+    { Properties: list<(string * string)>
+      MaxCpuCount: option<option<int>>
+      ToolsVersion: string option
+      Verbosity: MSBuildVerbosity option
+      FileLoggers: MSBuildFileLoggerConfig list option }
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for (string * string) list type signature in functions``() =
+        let source = """
+let MSBuildWithProjectProperties outputPath (targets: string) (properties: string -> (string * string) list) projects =
+    doingSomeStuff()
+"""
+
+        let expected = """
+let MSBuildWithProjectProperties outputPath (targets: string) (properties: string -> list<(string * string)>) projects =
+    doingSomeStuff()
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for string list type signature in function parameter``() =
+        let source = """
+let MSBuildWithProjectProperties outputPath (targets: string list) =
+    doingSomeStuff()
+"""
+
+        let expected = """
+let MSBuildWithProjectProperties outputPath (targets: list<string>) =
+    doingSomeStuff()
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``no quick fix needed (1)``() =
+        let source = """
+type MSBuildParams =
+    { Targets: list<string>
+      Properties: list<(string * string)>
+      MaxCpuCount: option<option<int>>
+      ToolsVersion: option<string>
+      Verbosity: option<MSBuildVerbosity>
+      FileLoggers: option<list<MSBuildFileLoggerConfig>> }
+"""
+
+        let expected = """
+type MSBuildParams =
+    { Targets: list<string>
+      Properties: list<(string * string)>
+      MaxCpuCount: option<option<int>>
+      ToolsVersion: option<string>
+      Verbosity: option<MSBuildVerbosity>
+      FileLoggers: option<list<MSBuildFileLoggerConfig>> }
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``no quick fix needed (2)``() =
+        let source = """
+let MSBuildWithProjectProperties outputPath (targets: array<string>) =
+    doingSomeStuff()
+"""
+
+        let expected = """
+let MSBuildWithProjectProperties outputPath (targets: array<string>) =
+    doingSomeStuff()
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)

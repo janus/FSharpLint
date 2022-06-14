@@ -7,55 +7,43 @@ open FSharpLint.Framework.Rules
 open FSharpLint.Framework
 open FSharpLint.Framework.Suggestion
 
-let generateGenericStyle tokens =
+
+let private generateGenericStyle tokens =
+    let getFirstMatchOfClosingBracket words =
+        let rec loop remainingWords accumulator =
+            match remainingWords with
+            | head :: rest when head = "(" ->
+                rest, (head + accumulator)
+            | head :: rest ->
+                loop rest (head + accumulator)
+            | [] -> failwith "Wrong Type format"
+
+        loop words String.Empty
+
     let mutable front: string = String.Empty
-    let mutable back: string = String.Empty
     let mutable heads: list<string> = list.Empty
-    let mutable tails: list<string> = list.Empty
-    let mutable consecutive = false
-    let mutable isBracketOpening = false
-    let mutable first = true
-    let mutable temp: string = String.Empty
     tokens |> List.iter (fun x ->
-        if x = "*" || x = ")" || x = "(" || x.Length = 1 then
+        if x = "*" || x = ")" || x = "(" then
             if x = "*" then
                 front <- front + " * "
-                consecutive <- false
+                heads <- front :: heads
+                front <- ""
             else
                 if x = "(" then
-                    heads <- front :: heads
-                    tails <- back :: tails
-                    front <- "<("
-                    back <- ""
-                    isBracketOpening <- true
-                elif x = ")" then
-                    front <- (heads.Head) + front
-                    back <- back + temp + ")>" + (tails.Head)
-                    temp <- ""
-                    consecutive <- false
+                    heads <- x :: front :: heads
+                    front <- ""
                 else
-                    front <- front + x
-                    consecutive <- false
+                    let rest, accumulator = getFirstMatchOfClosingBracket heads
+                    heads <- rest
+                    front <- accumulator + front + x
         else
-            if isBracketOpening then
-                front <- front + x
-                isBracketOpening <- false
-                //consecutive <- true
-            elif consecutive then
-                front <- front + temp + "<" + x
-                back <- ">" + back
-                temp <- ""
-                consecutive <- false
+            if front.Length > 0 then
+                front <- x + "<" + front + ">"
             else
-                if first then
-                    first <- false
-                    front <- front + x
-                else
-                    temp <- x
-                consecutive <- true)
-    front + back
+                front <- x)
+    String.Join( "", (List.toArray heads)) + front
 
-let tokenize source : list<string> =
+let private tokenize source : list<string> =
     let mutable tokens: list<string> = list.Empty
     let mutable chars: list<char> = list.Empty
     source |> String.iter (fun x ->
@@ -71,23 +59,18 @@ let tokenize source : list<string> =
         else
             chars <- x :: chars)
     if chars.Length > 0 then
-        tokens <- (String(chars |> List.rev |> List.toArray)) :: (List.rev tokens)
-    tokens
+        tokens <- (String(chars |> List.rev |> List.toArray)) :: tokens
+    List.rev tokens
 
 let private generateFix (text:string) range = lazy(
     ExpressionUtilities.tryFindTextOfRange range text
     |> Option.map (fun fromText ->
         let toText  = fromText.Trim() |> tokenize |> generateGenericStyle
-
         { FromText = fromText; FromRange = range; ToText = toText }))
 
 let private runner (args: AstNodeRuleParams) =
     match args.AstNode with
     | AstNode.Type(SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), None, _types, _, _, _, range)) ->
-        ExpressionUtilities.tryFindTextOfRange range args.FileContent
-        |> Option.map (fun fromText ->
-            let mwords = fromText.Split(' ')
-            printfn "%A" mwords) |> ignore
         { Range = range
           Message = Resources.GetString("RulesGenericTypesNormalizationError")
           SuggestedFix = Some (generateFix args.FileContent range)

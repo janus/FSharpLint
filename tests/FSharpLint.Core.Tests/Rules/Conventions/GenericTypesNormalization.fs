@@ -298,3 +298,124 @@ let MSBuildWithProjectProperties outputPath (targets: array<string>) =
 
         this.Parse source
         Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``generic type style should be improved (3)``() =
+        this.Parse "type 'a Foo = Foo of 'a"
+
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``generic type style should be improved (4)``() =
+        this.Parse """
+//[<ApiExplorerSettings(IgnoreApi = true)>]
+[<Route("api/v1/admin/import")>]
+type RoleAdminImportController(akkaService: AkkaService) =
+    inherit Controller()
+    [<HttpGet("jobs/all");
+      ProducesResponseType(typeof<bool>, 200);
+      ProducesResponseType(404);
+      Authorize(AuthorizationScopePolicies.Read)>]
+    member _.ListJobs(): Task<UserCmdResponseMsg> =
+        task {
+            return!
+                akkaService.ImporterSystem.ApiMaster <? ApiMasterMsg.GetAllJobsCmd
+        }
+    [<HttpPost("jobs/create");
+      DisableRequestSizeLimit;
+      RequestFormLimits(MultipartBodyLengthLimit = 509715200L);
+      ProducesResponseType(typeof<RoleChangeSummaryDto list>, 200);
+      ProducesResponseType(404);
+      Authorize(AuthorizationScopePolicies.Write)>]
+    member _.StartJob(file: IFormFile, [<FromQuery>] args: ImporterJobArgs) =
+        let importer = akkaService.ImporterSystem
+        ActionResult.ofAsyncResult <| asyncResult {
+            let! state =
+                (LowerCaseString.create args.State, file)
+                |> pipeObjectThroughValidation [ (fst, [stateIsValid]); (snd, [(fun s -> Ok s)]) ]
+            let! filePath = FormFile.downloadAsTemp file
+            let job =
+                { JobType = EsriBoundaryImport
+                  FileToImport = filePath
+                  State = state
+                  DryRun = args.DryRun }
+            importer.ApiMaster <! StartImportCmd job
+            return Ok job
+        }
+"""
+
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``recursive types in signature file``() =
+        this.Parse """
+type Cmd<'msg> = Cmd'<'msg> list
+and private Cmd'<'msg> = Send<'msg> -> unit
+"""
+
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``generic type style should be in multiline recursive types``() =
+        this.Parse """
+type ViewBinding<'model,'msg> = string * Variable<'model,'msg>
+and ViewBindings<'model,'msg> = ViewBinding<'model,'msg> list
+and Variable<'model,'msg> =
+    | Bind of Getter<'model>
+    | BindTwoWay of Getter<'model> * Setter<'model,'msg>
+    | BindTwoWayValidation of Getter<'model> * ValidSetter<'model,'msg>
+    | BindCmd of Execute<'model,'msg> * CanExecute<'model>
+    | BindModel of Getter<'model> * ViewBindings<'model,'msg>
+    | BindMap of Getter<'model> * (obj -> obj)
+"""
+
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``recursive classes``() =
+        this.Parse """
+type Folder(pathIn: string) =
+    let path = pathIn
+    let filenameArray : string array = System.IO.Directory.GetFiles(path)
+    member this.FileArray = Array.map (fun elem -> new File(elem, this)) filenameArray
+and File(filename: string, containingFolder: Folder) =
+    member __.Name = filename
+    member __.ContainingFolder = containingFolder
+"""
+
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``should keep type annotations on auto properties``() =
+        this.Parse """
+type Document(id : string, library : string, name : string) =
+    member val ID = id
+    member val Library = library
+    member val Name = name with get, set
+    member val LibraryID : string option = None with get, set
+"""
+
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``should keep type annotations in class``() =
+        this.Parse """
+type Document(id : string, library : string, name : string option) =
+    member val ID = id
+    member val Library = library
+    member val Name = name with get, set
+"""
+
+        Assert.IsTrue this.ErrorsExist
+
+    [<Test>]
+    member this.``comment before multiline class member``() =
+        this.Parse """
+type MaybeBuilder () =
+    member inline __.Bind
+// meh
+        (value, binder : 'T -> 'U option) : 'U option =
+        Option.bind binder value
+"""
+
+        Assert.IsTrue this.ErrorsExist

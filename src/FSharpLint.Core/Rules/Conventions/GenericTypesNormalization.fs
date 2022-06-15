@@ -7,6 +7,21 @@ open FSharpLint.Framework.Rules
 open FSharpLint.Framework
 open FSharpLint.Framework.Suggestion
 
+let getType attributes =
+    let rec loop (remainingAttributes: list<SynAttribute>) =
+        match remainingAttributes with
+        | head :: rest ->
+            match head.ArgExpr with
+            | SynExpr.Paren(SynExpr.Tuple(_, [SynExpr.TypeApp(_, _, [SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), None, _types, _, _, _, range)], _, _, _, _); _], _, _), _, _, _) ->
+                { Range = range
+                  Message = Resources.GetString("RulesGenericTypesNormalizationError")
+                  SuggestedFix = None
+                  TypeChecks = List.Empty }
+                |> Array.singleton
+            | _ -> loop rest
+        | [] -> Array.empty
+    loop attributes
+
 let private getFirstMatchOfOpeningBracket words =
     let rec loop remainingWords accumulator =
         match remainingWords with
@@ -136,6 +151,8 @@ let private runner (args: AstNodeRuleParams) =
           SuggestedFix = Some (generateFixwithSubType args.FileContent range)
           TypeChecks = List.Empty }
         |> Array.singleton
+    | AstNode.Binding(SynBinding(_, _, _, _, [attributes], _, _, _, _, _, _, _)) ->
+        getType (attributes.Attributes)
     | _ -> Array.empty
 
 let rule =

@@ -541,3 +541,218 @@ type MaybeBuilder () =
 
         Assert.IsTrue this.NoErrorsExist
 
+    [<Test>]
+    member this.``quick fix for  generic type style should be improved (3)``() =
+        let source = "type 'a Foo = Foo of 'a"
+
+        let expected = "type Foo<'a> = Foo of 'a"
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for generic type style should be improved (4)``() =
+        let source = """
+//[<ApiExplorerSettings(IgnoreApi = true)>]
+[<Route("api/v1/admin/import")>]
+type RoleAdminImportController(akkaService: AkkaService) =
+    inherit Controller()
+    [<HttpGet("jobs/all");
+      ProducesResponseType(typeof<bool>, 200);
+      ProducesResponseType(404);
+      Authorize(AuthorizationScopePolicies.Read)>]
+    member _.ListJobs(): Task<UserCmdResponseMsg> =
+        task {
+            return!
+                akkaService.ImporterSystem.ApiMaster <? ApiMasterMsg.GetAllJobsCmd
+        }
+    [<HttpPost("jobs/create");
+      DisableRequestSizeLimit;
+      RequestFormLimits(MultipartBodyLengthLimit = 509715200L);
+      ProducesResponseType(typeof<RoleChangeSummaryDto list>, 200);
+      ProducesResponseType(404);
+      Authorize(AuthorizationScopePolicies.Write)>]
+    member _.StartJob(file: IFormFile, [<FromQuery>] args: ImporterJobArgs) =
+        let importer = akkaService.ImporterSystem
+        ActionResult.ofAsyncResult <| asyncResult {
+            let! state =
+                (LowerCaseString.create args.State, file)
+                |> pipeObjectThroughValidation [ (fst, [stateIsValid]); (snd, [(fun s -> Ok s)]) ]
+            let! filePath = FormFile.downloadAsTemp file
+            let job =
+                { JobType = EsriBoundaryImport
+                  FileToImport = filePath
+                  State = state
+                  DryRun = args.DryRun }
+            importer.ApiMaster <! StartImportCmd job
+            return Ok job
+        }
+"""
+
+        let expected = """
+//[<ApiExplorerSettings(IgnoreApi = true)>]
+[<Route("api/v1/admin/import")>]
+type RoleAdminImportController(akkaService: AkkaService) =
+    inherit Controller()
+    [<HttpGet("jobs/all");
+      ProducesResponseType(typeof<bool>, 200);
+      ProducesResponseType(404);
+      Authorize(AuthorizationScopePolicies.Read)>]
+    member _.ListJobs(): Task<UserCmdResponseMsg> =
+        task {
+            return!
+                akkaService.ImporterSystem.ApiMaster <? ApiMasterMsg.GetAllJobsCmd
+        }
+    [<HttpPost("jobs/create");
+      DisableRequestSizeLimit;
+      RequestFormLimits(MultipartBodyLengthLimit = 509715200L);
+      ProducesResponseType(typeof<list<RoleChangeSummaryDto>>, 200);
+      ProducesResponseType(404);
+      Authorize(AuthorizationScopePolicies.Write)>]
+    member _.StartJob(file: IFormFile, [<FromQuery>] args: ImporterJobArgs) =
+        let importer = akkaService.ImporterSystem
+        ActionResult.ofAsyncResult <| asyncResult {
+            let! state =
+                (LowerCaseString.create args.State, file)
+                |> pipeObjectThroughValidation [ (fst, [stateIsValid]); (snd, [(fun s -> Ok s)]) ]
+            let! filePath = FormFile.downloadAsTemp file
+            let job =
+                { JobType = EsriBoundaryImport
+                  FileToImport = filePath
+                  State = state
+                  DryRun = args.DryRun }
+            importer.ApiMaster <! StartImportCmd job
+            return Ok job
+        }
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for recursive types in signature file``() =
+        let source = """
+type Cmd<'msg> = Cmd'<'msg> list
+and private Cmd'<'msg> = Send<'msg> -> unit
+"""
+
+        let expected = """
+type Cmd<'msg> = list<Cmd'<'msg>>
+and private Cmd'<'msg> = Send<'msg> -> unit
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for generic type style should be in multiline recursive types``() =
+        let source = """
+type ViewBinding<'model,'msg> = string * Variable<'model,'msg>
+and ViewBindings<'model,'msg> = ViewBinding<'model,'msg> list
+and Variable<'model,'msg> =
+    | Bind of Getter<'model>
+    | BindTwoWay of Getter<'model> * Setter<'model,'msg>
+    | BindTwoWayValidation of Getter<'model> * ValidSetter<'model,'msg>
+    | BindCmd of Execute<'model,'msg> * CanExecute<'model>
+    | BindModel of Getter<'model> * ViewBindings<'model,'msg>
+    | BindMap of Getter<'model> * (obj -> obj)
+"""
+
+        let expected = """
+type ViewBinding<'model,'msg> = string * Variable<'model,'msg>
+and ViewBindings<'model,'msg> = list<ViewBinding<'model,'msg>>
+and Variable<'model,'msg> =
+    | Bind of Getter<'model>
+    | BindTwoWay of Getter<'model> * Setter<'model,'msg>
+    | BindTwoWayValidation of Getter<'model> * ValidSetter<'model,'msg>
+    | BindCmd of Execute<'model,'msg> * CanExecute<'model>
+    | BindModel of Getter<'model> * ViewBindings<'model,'msg>
+    | BindMap of Getter<'model> * (obj -> obj)
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for recursive classes``() =
+        let source = """
+type Folder(pathIn: string) =
+    let path = pathIn
+    let filenameArray : string array = System.IO.Directory.GetFiles(path)
+    member this.FileArray = Array.map (fun elem -> new File(elem, this)) filenameArray
+and File(filename: string, containingFolder: Folder) =
+    member __.Name = filename
+    member __.ContainingFolder = containingFolder
+"""
+
+        let expected = """
+type Folder(pathIn: string) =
+    let path = pathIn
+    let filenameArray : array<string> = System.IO.Directory.GetFiles(path)
+    member this.FileArray = Array.map (fun elem -> new File(elem, this)) filenameArray
+and File(filename: string, containingFolder: Folder) =
+    member __.Name = filename
+    member __.ContainingFolder = containingFolder
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for type annotations on auto properties``() =
+        let source = """
+type Document(id : string, library : string, name : string) =
+    member val ID = id
+    member val Library = library
+    member val Name = name with get, set
+    member val LibraryID : string option = None with get, set
+"""
+
+        let expected = """
+type Document(id : string, library : string, name : string) =
+    member val ID = id
+    member val Library = library
+    member val Name = name with get, set
+    member val LibraryID : option<string> = None with get, set
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for type annotations in class``() =
+        let source = """
+type Document(id : string, library : string, name : string option) =
+    member val ID = id
+    member val Library = library
+    member val Name = name with get, set
+"""
+
+        let expected = """
+type Document(id : string, library : string, name : option<string>) =
+    member val ID = id
+    member val Library = library
+    member val Name = name with get, set
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix for comment before multiline class member``() =
+        let source = """
+type MaybeBuilder () =
+    member inline __.Bind
+// meh
+        (value, binder : 'T -> option<'U>) : 'U option =
+        Option.bind binder value
+"""
+
+        let expected = """
+type MaybeBuilder () =
+    member inline __.Bind
+// meh
+        (value, binder : 'T -> option<'U>) : option<'U> =
+        Option.bind binder value
+"""
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)

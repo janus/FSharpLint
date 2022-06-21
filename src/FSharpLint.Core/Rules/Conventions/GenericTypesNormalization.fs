@@ -85,7 +85,7 @@ let getType attributes text =
 let rec private generateGenericStyleForSubType tokens front generated isSubType closingCount =
     match tokens with
     | "*" :: rest ->
-        generateGenericStyleForSubType rest "" ((front + "*") :: generated) isSubType closingCount
+        generateGenericStyleForSubType rest "" (front + "*" :: generated) isSubType closingCount
     | "(" :: rest ->
         generateGenericStyleForSubType rest "" ("(" :: front :: generated) isSubType closingCount
     | ")" :: rest ->
@@ -93,7 +93,7 @@ let rec private generateGenericStyleForSubType tokens front generated isSubType 
         generateGenericStyleForSubType rest (accumulator + front + ")") pending isSubType closingCount
     | ":>" :: rest ->
         generateGenericStyleForSubType rest (front + " :> ") generated true closingCount
-    | head :: rest when front.Length > 0 && head <> "when" && not isSubType  && not (head.StartsWith("'")) ->
+    | head :: rest when front.Length > 0 && head <> "when" && not isSubType  && not (head.StartsWith "'") ->
         generateGenericStyleForSubType rest (head + "<" + front + " ") generated isSubType (closingCount + 1)
     | head :: rest when isSubType ->
         generateGenericStyleForSubType rest (front + head + ">") generated false (closingCount - 1)
@@ -101,15 +101,15 @@ let rec private generateGenericStyleForSubType tokens front generated isSubType 
         if String.IsNullOrEmpty front then
             generateGenericStyleForSubType rest head generated isSubType closingCount
         else
-            if front.EndsWith(" ") then
+            if front.EndsWith " " then
                 generateGenericStyleForSubType rest (front + head) generated isSubType closingCount
             else
                 generateGenericStyleForSubType rest (front + " " + head) generated isSubType closingCount
     | [] ->
         if closingCount > 0 then
-            String.Join( "", (List.toArray generated)) + front.TrimEnd() + ">"
+            String.Join("", List.toArray generated) + front.TrimEnd() + ">"
         else
-            String.Join( "", (List.toArray generated)) + front
+            String.Join("", List.toArray generated) + front
 
 let private generateFixwithSubType (text:string) range = lazy(
     ExpressionUtilities.tryFindTextOfRange range text
@@ -117,10 +117,10 @@ let private generateFixwithSubType (text:string) range = lazy(
         let words = fromText.Trim().Split('=')
         let generatedFromTokens = generateGenericStyleForSubType (words.[0] |> tokenize) (String.Empty) (list.Empty) false 0
         if words.Length > 0 then
-            let toText = generatedFromTokens + " ="  + String.Join(" ", (Array.sub words 1 (words.Length - 1)))
+            let toText = generatedFromTokens + " ="  + String.Join(" ", Array.sub words 1 (words.Length - 1))
             { FromText = fromText; FromRange = range; ToText = toText }
         else
-            let toText = generatedFromTokens + String.Join(" ", (Array.sub words 1 (words.Length - 1)))
+            let toText = generatedFromTokens + String.Join(" ", Array.sub words 1 (words.Length - 1))
             { FromText = fromText; FromRange = range; ToText = toText }))
 
 let private runner (args: AstNodeRuleParams) =

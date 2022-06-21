@@ -756,3 +756,16 @@ type MaybeBuilder () =
 """
         this.Parse source
         Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``units of measures declaration``() =
+        this.Parse """
+[<Measure>] type m
+[<Measure>] type kg
+[<Measure>] type s
+[<Measure>] type N = kg m / s^2
+[<Measure>] type Pa = N * m^2
+"""
+
+        Assert.IsTrue this.NoErrorsExist
+

@@ -124,20 +124,20 @@ let private generateFixwithSubType (text:string) range = lazy(
             { FromText = fromText; FromRange = range; ToText = toText }))
 
 let private runner (args: AstNodeRuleParams) =
-    match args.AstNode with
-    | AstNode.Type(SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), None, _types, _, _, _, range)) ->
+    match (args.AstNode, args.CheckInfo) with
+    | (AstNode.Type(SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), None, _types, _, _, _, range)), _) ->
         { Range = range
           Message = Resources.GetString("RulesGenericTypesNormalizationError")
           SuggestedFix = Some (generateFix args.FileContent range)
           TypeChecks = List.Empty }
         |> Array.singleton
-    | AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo(_, [_typeDec], _, _, _, false, _, _), _, _, _, range)) ->
+    | (AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo(_, [_typeDec], _, _, _, false, _, _), _, _, _, range)), _) ->
         { Range = range
           Message = Resources.GetString("RulesGenericTypesNormalizationError")
           SuggestedFix = Some (generateFixwithSubType args.FileContent range)
           TypeChecks = List.Empty }
         |> Array.singleton
-    | AstNode.Binding(SynBinding(_, _, _, _, [attributes], _, _, _, _, _, _, _)) ->
+    | (AstNode.Binding(SynBinding(_, _, _, _, [attributes], _, _, _, _, _, _, _)), _) ->
         getType (attributes.Attributes) args.FileContent
     | _ -> Array.empty
 

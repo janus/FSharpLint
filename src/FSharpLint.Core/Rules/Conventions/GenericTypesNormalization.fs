@@ -123,14 +123,35 @@ let private generateFixwithSubType (text:string) range = lazy(
             let toText = generatedFromTokens + String.Join(" ", Array.sub words 1 (words.Length - 1))
             { FromText = fromText; FromRange = range; ToText = toText }))
 
+let private isAttributeMeasure (attributes: list<SynAttribute>) =
+    let rec loop (identifiers: list<Ident>) =
+        match identifiers with
+        | head :: _ when head.idText = "Measure" ->
+            true
+        | _ :: rest ->
+            loop rest
+        | [] -> false
+
+    match attributes with
+    | head :: _ ->
+        match head.TypeName with
+        | LongIdentWithDots (identifiers, [])  ->
+            loop identifiers
+        | _ -> false
+    | _ -> false
+
 let private runner (args: AstNodeRuleParams) =
     match (args.AstNode, args.CheckInfo) with
     | (AstNode.Type(SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), None, _types, _, _, _, range)), _) ->
-        { Range = range
-          Message = Resources.GetString("RulesGenericTypesNormalizationError")
-          SuggestedFix = Some (generateFix args.FileContent range)
-          TypeChecks = List.Empty }
-        |> Array.singleton
+        match (List.rev (args.GetParents 3)).[0] with
+        | AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo([attributes], _, _, _, _, _, _, _), _, _, _, _)) when isAttributeMeasure attributes.Attributes ->
+            Array.empty
+        | _ ->
+            { Range = range
+              Message = Resources.GetString("RulesGenericTypesNormalizationError")
+              SuggestedFix = Some (generateFix args.FileContent range)
+              TypeChecks = List.Empty }
+            |> Array.singleton
     | (AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo(_, [_typeDec], _, _, _, false, _, _), _, _, _, range)), _) ->
         { Range = range
           Message = Resources.GetString("RulesGenericTypesNormalizationError")

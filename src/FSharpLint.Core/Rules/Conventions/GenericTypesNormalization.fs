@@ -6,6 +6,8 @@ open FSharpLint.Framework.Ast
 open FSharpLint.Framework.Rules
 open FSharpLint.Framework
 open FSharpLint.Framework.Suggestion
+open FSharp.Compiler.CodeAnalysis
+open FSharp.Compiler.Symbols
 
 let private getFirstMatchOfOpeningBracket words =
     let rec loop remainingWords accumulator =
@@ -67,7 +69,7 @@ let private generateFix (text:string) range = lazy(
         let toText  = fromText.Trim() |> tokenize |> generateGenericStyle
         { FromText = fromText; FromRange = range; ToText = toText }))
 
-let getType attributes text =
+let private getType attributes text (checkFile:FSharpCheckFileResults) =
     let rec loop (remainingAttributes: list<SynAttribute>) =
         match remainingAttributes with
         | head :: rest ->
@@ -80,7 +82,14 @@ let getType attributes text =
                 |> Array.singleton
             | _ -> loop rest
         | [] -> Array.empty
-    loop attributes
+    let assemblySignature =  checkFile.PartialAssemblySignature
+    if assemblySignature.Entities.Count > 0 then
+        match Some assemblySignature.Entities.[0] with
+        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 && moduleEnt.NestedEntities.[0].IsMeasure ->
+            Array.empty
+        | _ -> loop attributes
+    else
+        loop attributes
 
 let rec private generateGenericStyleForSubType tokens front generated isSubType closingCount =
     match tokens with
@@ -123,22 +132,32 @@ let private generateFixwithSubType (text:string) range = lazy(
             let toText = generatedFromTokens + String.Join(" ", Array.sub words 1 (words.Length - 1))
             { FromText = fromText; FromRange = range; ToText = toText }))
 
+let private getWarningDetails text range (checkFile:FSharpCheckFileResults) isSubType =
+    let assemblySignature =  checkFile.PartialAssemblySignature
+    if assemblySignature.Entities.Count > 0 then
+        match Some assemblySignature.Entities.[0] with
+        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 && moduleEnt.NestedEntities.[0].IsMeasure -> Array.empty
+        | _ ->
+            { Range = range
+              Message = Resources.GetString("RulesGenericTypesNormalizationError")
+              SuggestedFix = if isSubType then Some (generateFixwithSubType text range) else Some (generateFix text range)
+              TypeChecks = List.Empty }
+            |> Array.singleton
+    else
+        { Range = range
+          Message = Resources.GetString("RulesGenericTypesNormalizationError")
+          SuggestedFix = if isSubType then Some (generateFixwithSubType text range) else Some (generateFix text range)
+          TypeChecks = List.Empty }
+        |> Array.singleton
+
 let private runner (args: AstNodeRuleParams) =
     match (args.AstNode, args.CheckInfo) with
-    | (AstNode.Type(SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), None, _types, _, _, _, range)), _) ->
-        { Range = range
-          Message = Resources.GetString("RulesGenericTypesNormalizationError")
-          SuggestedFix = Some (generateFix args.FileContent range)
-          TypeChecks = List.Empty }
-        |> Array.singleton
-    | (AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo(_, [_typeDec], _, _, _, false, _, _), _, _, _, range)), _) ->
-        { Range = range
-          Message = Resources.GetString("RulesGenericTypesNormalizationError")
-          SuggestedFix = Some (generateFixwithSubType args.FileContent range)
-          TypeChecks = List.Empty }
-        |> Array.singleton
-    | (AstNode.Binding(SynBinding(_, _, _, _, [attributes], _, _, _, _, _, _, _)), _) ->
-        getType (attributes.Attributes) args.FileContent
+    | (AstNode.Type(SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), None, _types, _, _, _, range)), Some checkFile) ->
+        getWarningDetails args.FileContent range checkFile false
+    | (AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo(_, [_typeDec], _, _, _, false, _, _), _, _, _, range)), Some checkFile) ->
+        getWarningDetails args.FileContent range checkFile true
+    | (AstNode.Binding(SynBinding(_, _, _, _, [attributes], _, _, _, _, _, _, _)), Some checkFile) ->
+        getType (attributes.Attributes) args.FileContent checkFile
     | _ -> Array.empty
 
 let rule =

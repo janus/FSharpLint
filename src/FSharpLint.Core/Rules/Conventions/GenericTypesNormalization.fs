@@ -69,7 +69,12 @@ let private generateFix (text:string) range = lazy(
         let toText  = fromText.Trim() |> tokenize |> generateGenericStyle
         { FromText = fromText; FromRange = range; ToText = toText }))
 
-let private getType attributes text (checkFile:FSharpCheckFileResults) =
+let anyUnitOfMeasure (entities: Collections.Generic.IList<FSharpEntity>) =
+    let isEntityOfMeasure (entity: FSharpEntity) =
+        entity.IsMeasure
+    (Seq.tryFind isEntityOfMeasure entities).IsSome
+
+let private getType attributes text (checkFile: FSharpCheckFileResults) =
     let rec loop (remainingAttributes: list<SynAttribute>) =
         match remainingAttributes with
         | head :: rest ->
@@ -85,7 +90,7 @@ let private getType attributes text (checkFile:FSharpCheckFileResults) =
     let assemblySignature =  checkFile.PartialAssemblySignature
     if assemblySignature.Entities.Count > 0 then
         match Some assemblySignature.Entities.[0] with
-        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 && moduleEnt.NestedEntities.[0].IsMeasure ->
+        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 && anyUnitOfMeasure(moduleEnt.NestedEntities) ->
             Array.empty
         | _ -> loop attributes
     else
@@ -132,23 +137,21 @@ let private generateFixwithSubType (text:string) range = lazy(
             let toText = generatedFromTokens + String.Join(" ", Array.sub words 1 (words.Length - 1))
             { FromText = fromText; FromRange = range; ToText = toText }))
 
-let private getWarningDetails text range (checkFile:FSharpCheckFileResults) isSubType =
+let private getWarningDetails text range (checkFile: FSharpCheckFileResults) isSubType =
+    let getWarningDetails isSub =
+        { Range = range
+          Message = Resources.GetString("RulesGenericTypesNormalizationError")
+          SuggestedFix = if isSub then Some (generateFixwithSubType text range) else Some (generateFix text range)
+          TypeChecks = List.Empty }
+        |> Array.singleton
+
     let assemblySignature =  checkFile.PartialAssemblySignature
     if assemblySignature.Entities.Count > 0 then
         match Some assemblySignature.Entities.[0] with
-        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 && moduleEnt.NestedEntities.[0].IsMeasure -> Array.empty
-        | _ ->
-            { Range = range
-              Message = Resources.GetString("RulesGenericTypesNormalizationError")
-              SuggestedFix = if isSubType then Some (generateFixwithSubType text range) else Some (generateFix text range)
-              TypeChecks = List.Empty }
-            |> Array.singleton
+        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 && anyUnitOfMeasure(moduleEnt.NestedEntities) -> Array.empty
+        | _ -> getWarningDetails isSubType
     else
-        { Range = range
-          Message = Resources.GetString("RulesGenericTypesNormalizationError")
-          SuggestedFix = if isSubType then Some (generateFixwithSubType text range) else Some (generateFix text range)
-          TypeChecks = List.Empty }
-        |> Array.singleton
+        getWarningDetails isSubType
 
 let private runner (args: AstNodeRuleParams) =
     match (args.AstNode, args.CheckInfo) with

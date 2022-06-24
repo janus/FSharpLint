@@ -69,10 +69,24 @@ let private generateFix (text:string) range = lazy(
         let toText  = fromText.Trim() |> tokenize |> generateGenericStyle
         { FromText = fromText; FromRange = range; ToText = toText }))
 
-let anyUnitOfMeasure (entities: Collections.Generic.IList<FSharpEntity>) =
+let skipUnitOfMeasure (entities: Collections.Generic.IList<FSharpEntity>) =
     let isEntityOfMeasure (entity: FSharpEntity) =
-        entity.IsMeasure
-    (Seq.tryFind isEntityOfMeasure entities).IsSome
+        if not entity.IsMeasure then
+            if entity.IsFSharpRecord || entity.IsValueType || entity.IsClass then
+                let fields = entity.FSharpFields
+                printfn "%A" fields
+                false
+            elif entity.IsFSharpUnion then
+                let cases = entity.UnionCases
+                printfn "%A" (cases.[0].Name)
+                printfn "%A" (cases.[1].Fields.[2].FieldType)
+                false
+            else
+                false
+        else
+            true
+    Seq.tryFind isEntityOfMeasure entities |> ignore
+    true
 
 let private getType attributes text (checkFile: FSharpCheckFileResults) =
     let rec loop (remainingAttributes: list<SynAttribute>) =
@@ -90,7 +104,8 @@ let private getType attributes text (checkFile: FSharpCheckFileResults) =
     let assemblySignature =  checkFile.PartialAssemblySignature
     if assemblySignature.Entities.Count > 0 then
         match Some assemblySignature.Entities.[0] with
-        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 && anyUnitOfMeasure(moduleEnt.NestedEntities) ->
+        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 ->
+            skipUnitOfMeasure(moduleEnt.NestedEntities) |> ignore
             Array.empty
         | _ -> loop attributes
     else
@@ -148,7 +163,9 @@ let private getWarningDetails text range (checkFile: FSharpCheckFileResults) isS
     let assemblySignature =  checkFile.PartialAssemblySignature
     if assemblySignature.Entities.Count > 0 then
         match Some assemblySignature.Entities.[0] with
-        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 && anyUnitOfMeasure(moduleEnt.NestedEntities) -> Array.empty
+        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 -> 
+            skipUnitOfMeasure(moduleEnt.NestedEntities) |> ignore
+            Array.empty
         | _ -> getWarningDetails isSubType
     else
         getWarningDetails isSubType

@@ -769,3 +769,15 @@ type MaybeBuilder () =
 
         Assert.IsTrue this.NoErrorsExist
 
+    [<Test>]
+    member this.``no quick fix for units of measure``() =
+        let source = """
+[<Measure>] type m
+[<Measure>] type kg
+[<Measure>] type s
+[<Measure>] type N = kg m / s^2
+[<Measure>] type Pa = N * m^2
+"""
+
+        this.Parse source
+        Assert.AreEqual(source, this.ApplyQuickFix source)

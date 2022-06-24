@@ -69,7 +69,13 @@ let private generateFix (text:string) range = lazy(
         let toText  = fromText.Trim() |> tokenize |> generateGenericStyle
         { FromText = fromText; FromRange = range; ToText = toText }))
 
-let firstNotUnitOfMeasure (entities: Collections.Generic.IList<FSharpEntity>) =
+let private noneIsUnitOfMeasure (entities: Collections.Generic.IList<FSharpEntity>) =
+    let isEntityOfMeasure (entity: FSharpEntity) =
+        not entity.IsMeasure
+    Seq.exists isEntityOfMeasure entities
+
+
+let private firstNotUnitOfMeasure (entities: Collections.Generic.IList<FSharpEntity>) =
     let isEntityOfMeasure (entity: FSharpEntity) =
         not entity.IsMeasure
     (Seq.tryFind isEntityOfMeasure entities).IsSome
@@ -148,16 +154,26 @@ let private getWarningDetails text range (checkFile: FSharpCheckFileResults) isS
     let assemblySignature =  checkFile.PartialAssemblySignature
     if assemblySignature.Entities.Count > 0 then
         match Some assemblySignature.Entities.[0] with
-        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 && firstNotUnitOfMeasure(moduleEnt.NestedEntities) ->
+        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 && firstNotUnitOfMeasure(moduleEnt.NestedEntities) && isSubType ->
             getWarningDetails isSubType
-        | _ -> Array.empty
+        | Some moduleEnt ->
+            let maybeText = ExpressionUtilities.tryFindTextOfRange range text
+            match maybeText with
+            | Some typeText ->
+                let isEntity (entity: FSharpEntity) =
+                    typeText.Contains(entity.ToString()) && entity.IsMeasure
+                if Seq.exists isEntity moduleEnt.NestedEntities then
+                    Array.empty
+                else
+                    getWarningDetails isSubType
+            | _ -> getWarningDetails isSubType
+        | _ -> getWarningDetails isSubType
     else
         getWarningDetails isSubType
 
 let private runner (args: AstNodeRuleParams) =
     match (args.AstNode, args.CheckInfo) with
     | (AstNode.Type(SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), None, _types, _, _, _, range)), Some checkFile) ->
-        printfn "%A" args.AstNode
         getWarningDetails args.FileContent range checkFile false
     | (AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo(_, [_typeDec], _, _, _, false, _, _), _, _, _, range)), Some checkFile) ->
         getWarningDetails args.FileContent range checkFile true

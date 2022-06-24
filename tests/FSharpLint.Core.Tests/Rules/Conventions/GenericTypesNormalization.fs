@@ -781,3 +781,77 @@ type MaybeBuilder () =
 
         this.Parse source
         Assert.AreEqual(source, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix should still work in non-unit-of-measure types, even if units of measure present (I)``() =
+        let source = """
+type 'a Foo = Foo of 'a
+
+[<Measure>] type m
+[<Measure>] type kg
+[<Measure>] type s
+[<Measure>] type N = kg m / s^2
+[<Measure>] type Pa = N * m^2
+"""
+        let expected = """
+type Foo<'a> = Foo of 'a
+
+[<Measure>] type m
+[<Measure>] type kg
+[<Measure>] type s
+[<Measure>] type N = kg m / s^2
+[<Measure>] type Pa = N * m^2
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix should still work in non-unit-of-measure types, even if units of measure present (II)``() =
+        let source = """
+[<Measure>] type m
+[<Measure>] type kg
+[<Measure>] type s
+[<Measure>] type N = kg m / s^2
+[<Measure>] type Pa = N * m^2
+
+type 'a Foo = Foo of 'a
+"""
+        let expected = """
+[<Measure>] type m
+[<Measure>] type kg
+[<Measure>] type s
+[<Measure>] type N = kg m / s^2
+[<Measure>] type Pa = N * m^2
+
+type Foo<'a> = Foo of 'a
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)
+
+    [<Test>]
+    member this.``quick fix should still work in non-unit-of-measure types, even if units of measure present (III)``() =
+        let source = """
+[<Measure>] type m
+[<Measure>] type kg
+[<Measure>] type s
+
+type 'a Foo = Foo of 'a
+
+[<Measure>] type N = kg m / s^2
+[<Measure>] type Pa = N * m^2
+"""
+        let expected = """
+[<Measure>] type m
+[<Measure>] type kg
+[<Measure>] type s
+
+type Foo<'a> = Foo of 'a
+
+[<Measure>] type N = kg m / s^2
+[<Measure>] type Pa = N * m^2
+"""
+
+        this.Parse source
+        Assert.AreEqual(expected, this.ApplyQuickFix source)

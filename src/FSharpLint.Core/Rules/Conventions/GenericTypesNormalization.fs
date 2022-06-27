@@ -69,18 +69,7 @@ let private generateFix (text:string) range = lazy(
         let toText  = fromText.Trim() |> tokenize |> generateGenericStyle
         { FromText = fromText; FromRange = range; ToText = toText }))
 
-let private noneIsUnitOfMeasure (entities: Collections.Generic.IList<FSharpEntity>) =
-    let isEntityOfMeasure (entity: FSharpEntity) =
-        not entity.IsMeasure
-    Seq.exists isEntityOfMeasure entities
-
-
-let private firstNotUnitOfMeasure (entities: Collections.Generic.IList<FSharpEntity>) =
-    let isEntityOfMeasure (entity: FSharpEntity) =
-        not entity.IsMeasure
-    (Seq.tryFind isEntityOfMeasure entities).IsSome
-
-let private getType attributes text (checkFile: FSharpCheckFileResults) =
+let private getType attributes text =
     let rec loop (remainingAttributes: list<SynAttribute>) =
         match remainingAttributes with
         | head :: rest ->
@@ -93,14 +82,8 @@ let private getType attributes text (checkFile: FSharpCheckFileResults) =
                 |> Array.singleton
             | _ -> loop rest
         | [] -> Array.empty
-    let assemblySignature =  checkFile.PartialAssemblySignature
-    if assemblySignature.Entities.Count > 0 then
-        match Some assemblySignature.Entities.[0] with
-        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 && firstNotUnitOfMeasure(moduleEnt.NestedEntities) ->
-            loop attributes
-        | _ -> Array.empty
-    else
-        loop attributes
+
+    loop attributes
 
 let rec private generateGenericStyleForSubType tokens front generated isSubType closingCount =
     match tokens with
@@ -151,22 +134,15 @@ let private getWarningDetails text range (checkFile: FSharpCheckFileResults) isS
           TypeChecks = List.Empty }
         |> Array.singleton
 
-    let assemblySignature =  checkFile.PartialAssemblySignature
+    let assemblySignature = checkFile.PartialAssemblySignature
     if assemblySignature.Entities.Count > 0 then
-        match Some assemblySignature.Entities.[0] with
-        | Some moduleEnt when moduleEnt.NestedEntities.Count > 0 && firstNotUnitOfMeasure(moduleEnt.NestedEntities) && isSubType ->
-            getWarningDetails isSubType
-        | Some moduleEnt ->
-            let maybeText = ExpressionUtilities.tryFindTextOfRange range text
-            match maybeText with
-            | Some typeText ->
-                let isEntity (entity: FSharpEntity) =
-                    typeText.Contains(entity.ToString()) && entity.IsMeasure
-                if Seq.exists isEntity moduleEnt.NestedEntities then
-                    Array.empty
-                else
-                    getWarningDetails isSubType
-            | _ -> getWarningDetails isSubType
+        let moduleEnt = assemblySignature.Entities.[0]
+        let hasMeasure (typeText: string) =
+            let isMeasureEntity (entity: FSharpEntity) =
+                typeText.Contains(entity.ToString()) && entity.IsMeasure
+            Seq.exists isMeasureEntity moduleEnt.NestedEntities
+        match ExpressionUtilities.tryFindTextOfRange range text with
+        | Some typeText when hasMeasure typeText -> Array.empty
         | _ -> getWarningDetails isSubType
     else
         getWarningDetails isSubType
@@ -177,8 +153,8 @@ let private runner (args: AstNodeRuleParams) =
         getWarningDetails args.FileContent range checkFile false
     | (AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo(_, [_typeDec], _, _, _, false, _, _), _, _, _, range)), Some checkFile) ->
         getWarningDetails args.FileContent range checkFile true
-    | (AstNode.Binding(SynBinding(_, _, _, _, [attributes], _, _, _, _, _, _, _)), Some checkFile) ->
-        getType (attributes.Attributes) args.FileContent checkFile
+    | (AstNode.Binding(SynBinding(_, _, _, _, [attributes], _, _, _, _, _, _, _)), _) ->
+        getType (attributes.Attributes) args.FileContent
     | _ -> Array.empty
 
 let rule =

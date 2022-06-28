@@ -12,113 +12,108 @@ open FSharp.Compiler.Symbols
 let private getFirstMatchOfOpeningBracket words =
     let rec loop remainingWords accumulator =
         match remainingWords with
-        | head :: rest when head = "(" ->
-            rest, (head + accumulator)
-        | head :: rest ->
-            loop rest (head + accumulator)
+        | head :: tail when head = "(" ->
+            tail, (head + accumulator)
+        | head :: tail ->
+            loop tail (head + accumulator)
         | [] -> failwith "Wrong Type format"
 
     loop words String.Empty
 
 let private generateGenericStyle tokens =
-    let mutable front: string = String.Empty
-    let mutable heads: list<string> = list.Empty
-    tokens |> List.iter (fun x ->
-        if x = "*" || x = ")" || x = "(" then
-            if x = "*" then
-                front <- front + " * "
-                heads <- front :: heads
-                front <- ""
-            else
-                if x = "(" then
-                    heads <- x :: front :: heads
-                    front <- ""
-                else
-                    let rest, accumulator = getFirstMatchOfOpeningBracket heads
-                    heads <- rest
-                    front <- accumulator + front + x
-        else
-            if front.Length > 0 then
-                front <- x + "<" + front + ">"
-            else
-                front <- x)
-    String.Join( "", (List.toArray heads)) + front
+    let rec loop tokens (front: string) (heads: List<string>) =
+        match tokens with
+        | "*" :: tail -> loop tail String.Empty (front + " * " :: heads)
+        | "(" :: tail -> loop tail String.Empty ("(" :: front :: heads)
+        | ")" :: tail ->
+            let others, accumulator = getFirstMatchOfOpeningBracket heads
+            loop tail (accumulator + front + ")") others
+        | head :: tail when front.Length > 0 -> loop tail (head + "<" + front + ">") heads
+        | head :: tail -> loop tail head heads
+        | [] -> String.Join(String.Empty, List.toArray heads) + front
 
-let private tokenize source : list<string> =
-    let mutable tokens: list<string> = list.Empty
-    let mutable chars: list<char> = list.Empty
-    source |> String.iter (fun x ->
-        if x = ')' || x = '(' || x = '*' then
-            if chars.Length > 0 then
-                tokens <- String(chars |> List.rev |> List.toArray) :: tokens
-                chars <- list.Empty
-            tokens <- string x :: tokens
-        elif x = ' ' then
-            if chars.Length > 0 then
-                tokens <- String(chars |> List.rev |> List.toArray) :: tokens
-                chars <- list.Empty
-        else
-            chars <- x :: chars)
-    if chars.Length > 0 then
-        tokens <- String(chars |> List.rev |> List.toArray) :: tokens
-    List.rev tokens
+    loop tokens String.Empty List.Empty
 
-let private generateFix (text:string) range = lazy(
+let private tokenize (source: string) : List<string> =
+    let chars = Array.toList(source.ToCharArray())
+    let rec loop (chars: List<char>) (accumulator: List<char>) (tokens: List<string>) =
+        match chars with
+        | head :: tail when "()*".Contains head ->
+            if accumulator.Length > 0 then
+                let accumulated = String(accumulator |> List.rev |> List.toArray)
+                loop tail List.Empty (string head :: accumulated :: tokens)
+            else
+                loop tail accumulator (string head :: tokens)
+        | head :: tail when head = ' ' ->
+            if accumulator.Length > 0 then
+                loop tail List.Empty (String(accumulator |> List.rev |> List.toArray) :: tokens)
+            else
+                loop tail accumulator tokens
+        | head :: tail -> loop tail (head :: accumulator) tokens
+        | [] ->
+            if accumulator.Length > 0 then
+                List.rev (String(accumulator |> List.rev |> List.toArray) :: tokens)
+            else
+                List.rev tokens
+
+    loop chars List.Empty List.Empty
+
+let private generateFix (text: string) range = lazy(
     ExpressionUtilities.tryFindTextOfRange range text
     |> Option.map (fun fromText ->
         let toText  = fromText.Trim() |> tokenize |> generateGenericStyle
         { FromText = fromText; FromRange = range; ToText = toText }))
 
 let private getType attributes text typeMatch =
-    let rec loop (remainingAttributes: list<SynAttribute>) =
+    let rec loop (remainingAttributes: List<SynAttribute>) =
         match remainingAttributes with
-        | head :: rest ->
+        | head :: tail ->
             match head.ArgExpr with
-            | SynExpr.Paren(SynExpr.Tuple(_, [SynExpr.TypeApp(_, _, [SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), None, _types, _, _, _, range)], _, _, _, _); _], _, _), _, _, _) ->
+            | SynExpr.Paren(SynExpr.Tuple(_, [SynExpr.TypeApp(_, _, [SynType.App(SynType.LongIdent (LongIdentWithDots ([_type], [])), None, _types, _, _, _, range)], _, _, _, _); _], _, _), _, _, _) ->
                 { Range = range
-                  Message = Resources.GetString("RulesGenericTypesNormalizationError")
-                  SuggestedFix = Some (generateFix text range)
+                  Message = Resources.GetString "RulesGenericTypesNormalizationError"
+                  SuggestedFix = generateFix text range |> Some
                   TypeChecks = (fun () -> typeMatch) |> List.singleton }
                 |> Array.singleton
-            | _ -> loop rest
+            | _ -> loop tail
         | [] -> Array.empty
 
     loop attributes
 
 let rec private generateGenericStyleForSubType tokens front generated isSubType closingCount =
     match tokens with
-    | "*" :: rest ->
-        generateGenericStyleForSubType rest "" (front + "*" :: generated) isSubType closingCount
-    | "(" :: rest ->
-        generateGenericStyleForSubType rest "" ("(" :: front :: generated) isSubType closingCount
-    | ")" :: rest ->
+    | "*" :: tail ->
+        generateGenericStyleForSubType tail String.Empty (front + "*" :: generated) isSubType closingCount
+    | "(" :: tail ->
+        generateGenericStyleForSubType tail String.Empty ("(" :: front :: generated) isSubType closingCount
+    | ")" :: tail ->
         let pending, accumulator = getFirstMatchOfOpeningBracket generated
-        generateGenericStyleForSubType rest (accumulator + front + ")") pending isSubType closingCount
-    | ":>" :: rest ->
-        generateGenericStyleForSubType rest (front + " :> ") generated true closingCount
-    | head :: rest when front.Length > 0 && head <> "when" && not isSubType  && not (head.StartsWith "'") ->
-        generateGenericStyleForSubType rest (head + "<" + front + " ") generated isSubType (closingCount + 1)
-    | head :: rest when isSubType ->
-        generateGenericStyleForSubType rest (front + head + ">") generated false (closingCount - 1)
-    | head :: rest ->
+        generateGenericStyleForSubType tail (accumulator + front + ")") pending isSubType closingCount
+    | ":>" :: tail ->
+        generateGenericStyleForSubType tail (front + " :> ") generated true closingCount
+    | head :: tail when front.Length > 0 && head <> "when" && not isSubType  && not (head.StartsWith "'") ->
+        generateGenericStyleForSubType tail (head + "<" + front + " ") generated isSubType (closingCount + 1)
+    | head :: tail when isSubType ->
+        generateGenericStyleForSubType tail (front + head + ">") generated false (closingCount - 1)
+    | head :: tail ->
         if String.IsNullOrEmpty front then
-            generateGenericStyleForSubType rest head generated isSubType closingCount
+            generateGenericStyleForSubType tail head generated isSubType closingCount
         else
             if front.EndsWith " " then
-                generateGenericStyleForSubType rest (front + head) generated isSubType closingCount
+                generateGenericStyleForSubType tail (front + head) generated isSubType closingCount
             else
-                generateGenericStyleForSubType rest (front + " " + head) generated isSubType closingCount
+                generateGenericStyleForSubType tail (front + " " + head) generated isSubType closingCount
     | [] ->
         if closingCount > 0 then
-            String.Join("", List.toArray generated) + front.TrimEnd() + ">"
+            String.Join(String.Empty, List.toArray generated) + front.TrimEnd() + ">"
         else
-            String.Join("", List.toArray generated) + front
+            String.Join(String.Empty, List.toArray generated) + front
 
-let private generateFixwithSubType (text:string) range = lazy(
+let private generateFixWithSubType (text: string) range = lazy(
     ExpressionUtilities.tryFindTextOfRange range text
     |> Option.map (fun fromText ->
         let words = fromText.Trim().Split('=')
-        let generatedFromTokens = generateGenericStyleForSubType (words.[0] |> tokenize) (String.Empty) (list.Empty) false 0
+        let generatedFromTokens = generateGenericStyleForSubType (words.[0] |> tokenize) String.Empty List.Empty false 0
         if words.Length > 0 then
             let toText = generatedFromTokens + " ="  + String.Join(" ", Array.sub words 1 (words.Length - 1))
             { FromText = fromText; FromRange = range; ToText = toText }
@@ -127,10 +122,15 @@ let private generateFixwithSubType (text:string) range = lazy(
             { FromText = fromText; FromRange = range; ToText = toText }))
 
 let private getWarningDetails text range (checkFile: FSharpCheckFileResults) isSubType =
+    let getSuggestFix isSub =
+        if isSub then
+            generateFixWithSubType text range |> Some
+        else
+            generateFix text range |> Some
     let getWarningDetails isSub typeMatch =
         { Range = range
-          Message = Resources.GetString("RulesGenericTypesNormalizationError")
-          SuggestedFix = if isSub then Some (generateFixwithSubType text range) else Some (generateFix text range)
+          Message = Resources.GetString "RulesGenericTypesNormalizationError"
+          SuggestedFix = getSuggestFix isSub
           TypeChecks = (fun () -> typeMatch) |> List.singleton }
         |> Array.singleton
 
@@ -148,13 +148,13 @@ let private getWarningDetails text range (checkFile: FSharpCheckFileResults) isS
         getWarningDetails isSubType false
 
 let private runner (args: AstNodeRuleParams) =
-    match (args.AstNode, args.CheckInfo) with
-    | (AstNode.Type(SynType.App(SynType.LongIdent (LongIdentWithDots ([_typ], [])), None, _types, _, _, _, range)), Some checkFile) ->
+    match args.AstNode, args.CheckInfo with
+    | AstNode.Type(SynType.App(SynType.LongIdent (LongIdentWithDots ([_type], [])), None, _types, _, _, _, range)), Some checkFile ->
         getWarningDetails args.FileContent range checkFile false
-    | (AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo(_, [_typeDec], _, _, _, false, _, _), _, _, _, range)), Some checkFile) ->
+    | AstNode.TypeDefinition(SynTypeDefn(SynComponentInfo(_, [_typeDec], _, _, _, false, _, _), _, _, _, range)), Some checkFile ->
         getWarningDetails args.FileContent range checkFile true
-    | (AstNode.Binding(SynBinding(_, _, _, _, [attributes], _, _, _, _, _, _, _)), _) ->
-        getType (attributes.Attributes) args.FileContent true
+    | AstNode.Binding(SynBinding(_, _, _, _, [attributes], _, _, _, _, _, _, _)), _ ->
+        getType attributes.Attributes args.FileContent true
     | _ -> Array.empty
 
 let rule =

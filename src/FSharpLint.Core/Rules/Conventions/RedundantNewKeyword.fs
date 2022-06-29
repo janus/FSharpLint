@@ -31,7 +31,8 @@ let private doesNotImplementIDisposable (checkFile:FSharpCheckFileResults) (iden
         ctor.DeclaringEntity
         |> Option.exists (fun ctorForType ->
             Seq.forall (implementsIDisposable >> not) ctorForType.AllInterfaces)
-    | Some(_) | None -> false
+    | Some(_) -> false
+    | None -> true
 
 let private generateFix (text:string) range = lazy(
     ExpressionUtilities.tryFindTextOfRange range text

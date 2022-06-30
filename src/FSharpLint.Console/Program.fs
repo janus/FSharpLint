@@ -2,6 +2,8 @@
 
 open Argu
 open System
+open System.IO
+open System.Text
 open FSharpLint.Framework
 open FSharpLint.Application
 
@@ -22,12 +24,14 @@ type private FileType =
 type private ToolArgs =
     | [<AltCommandLine("-f")>] Format of OutputFormat
     | [<CliPrefix(CliPrefix.None)>] Lint of ParseResults<LintArgs>
+    | [<CliPrefix(CliPrefix.None)>] Fix of ParseResults<LintArgs>
 with
     interface IArgParserTemplate with
         member this.Usage =
             match this with
             | Format _ -> "Output format of the linter."
             | Lint _ -> "Runs FSharpLint against a file or a collection of files."
+            | Fix _ -> "Runs FSharpLint against a file or a collection of files and also apply SuggestedFix if available"
 
 // TODO: investigate erroneous warning on this type definition
 // fsharplint:disable UnionDefinitionIndentation
@@ -83,13 +87,27 @@ let private start (arguments:ParseResults<ToolArgs>) (toolsPath:Ionide.ProjInfo.
         output.WriteError str
         exitCode <- -1
 
-    match arguments.GetSubCommand() with
-    | Lint lintArgs ->
-
+    let lintAndMaybeApplySuggestedFix (lintArgs: ParseResults<LintArgs>) isFix =
         let handleLintResult = function
             | LintResult.Success(warnings) ->
-                String.Format(Resources.GetString("ConsoleFinished"), List.length warnings)
-                |> output.WriteInfo
+                if isFix then
+                    List.iter (fun (element: Suggestion.LintWarning) ->
+                        let text = File.ReadAllText element.FilePath
+                        match element.Details.SuggestedFix with
+                        | Some suggestedFix ->
+                            suggestedFix.Force()
+                            |> Option.map (fun suggestedFix ->
+                                String.Format(Resources.GetString("ConsoleApplyingSuggestedFixFile"), element.FilePath) |> output.WriteInfo
+                                let createText = text.Replace(suggestedFix.FromText, suggestedFix.ToText)
+                                let message = "Replace:\n" + suggestedFix.FromText + "\n" + "with:\n" +  suggestedFix.ToText
+                                message |> output.WriteInfo
+                                File.WriteAllText(element.FilePath, createText, Encoding.UTF8)) |> ignore
+                        | None ->
+                            String.Format(Resources.GetString("ConsoleFinished"), List.length warnings)
+                            |> output.WriteInfo ) warnings
+                else
+                    String.Format(Resources.GetString("ConsoleFinished"), List.length warnings)
+                    |> output.WriteInfo
                 if not (List.isEmpty warnings) then exitCode <- -1
             | LintResult.Failure(failure) ->
                 handleError failure.Description
@@ -125,6 +143,9 @@ let private start (arguments:ParseResults<ToolArgs>) (toolsPath:Ionide.ProjInfo.
             let target = if fileType = FileType.Source then "source" else target
             sprintf "Lint failed while analysing %s.\nFailed with: %s\nStack trace: %s" target e.Message e.StackTrace
             |> handleError
+    match arguments.GetSubCommand() with
+    | Lint lintArgs -> lintAndMaybeApplySuggestedFix lintArgs false
+    | Fix lintArgs -> lintAndMaybeApplySuggestedFix lintArgs true
     | _ -> ()
 
     exitCode

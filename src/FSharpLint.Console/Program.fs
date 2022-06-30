@@ -22,12 +22,14 @@ type private FileType =
 type private ToolArgs =
     | [<AltCommandLine("-f")>] Format of OutputFormat
     | [<CliPrefix(CliPrefix.None)>] Lint of ParseResults<LintArgs>
+    | [<CliPrefix(CliPrefix.None)>] Fix of ParseResults<LintArgs>
 with
     interface IArgParserTemplate with
         member this.Usage =
             match this with
             | Format _ -> "Output format of the linter."
             | Lint _ -> "Runs FSharpLint against a file or a collection of files."
+            | Fix _ -> "Runs FSharpLint against a file or a collection of files and also apply SuggestedFix if available"
 
 // TODO: investigate erroneous warning on this type definition
 // fsharplint:disable UnionDefinitionIndentation
@@ -125,6 +127,7 @@ let private start (arguments:ParseResults<ToolArgs>) (toolsPath:Ionide.ProjInfo.
             let target = if fileType = FileType.Source then "source" else target
             sprintf "Lint failed while analysing %s.\nFailed with: %s\nStack trace: %s" target e.Message e.StackTrace
             |> handleError
+    | Fix _ -> ()
     | _ -> ()
 
     exitCode

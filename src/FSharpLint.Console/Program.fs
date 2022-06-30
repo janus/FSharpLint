@@ -2,6 +2,8 @@
 
 open Argu
 open System
+open System.IO
+open System.Text
 open FSharpLint.Framework
 open FSharpLint.Application
 
@@ -35,6 +37,7 @@ and private LintArgs =
     | [<MainCommand; Mandatory>] Target of target:string
     | [<AltCommandLine("-l")>] Lint_Config of lintConfig:string
     | File_Type of FileType
+    | Fix of ruleName:string
 // fsharplint:enable UnionDefinitionIndentation
 with
     interface IArgParserTemplate with
@@ -43,6 +46,7 @@ with
             | Target _ -> "Input to lint."
             | File_Type _ -> "Input type the linter will run against. If this is not set, the file type will be inferred from the file extension."
             | Lint_Config _ -> "Path to the config for the lint."
+            | Fix _ -> "Apply quickfixes for specified rule name or names (comma separated)."
 // fsharplint:enable UnionCasesNames
 
 let private parserProgress (output:Output.IOutput) = function
@@ -83,34 +87,28 @@ let private start (arguments:ParseResults<ToolArgs>) (toolsPath:Ionide.ProjInfo.
         output.WriteError str
         exitCode <- -1
 
-    match arguments.GetSubCommand() with
-    | Lint lintArgs ->
+    let printToConsole = function
+        | Some _ -> String.Format(Resources.GetString "ConsoleApplyingSuggestedFixFile") |> output.WriteInfo
+        | None -> ()
 
-        let handleLintResult = function
-            | LintResult.Success(warnings) ->
-                String.Format(Resources.GetString("ConsoleFinished"), List.length warnings)
-                |> output.WriteInfo
-                if not (List.isEmpty warnings) then exitCode <- -1
-            | LintResult.Failure(failure) ->
-                handleError failure.Description
+    let handleLintResult (maybeName: option<string>) = function
+        | LintResult.Success(warnings) ->
+            printToConsole maybeName
+            List.iter (fun (element: Suggestion.LintWarning) ->
+                let sourceCode = File.ReadAllText element.FilePath
+                match element.Details.SuggestedFix, maybeName with
+                | Some suggestedFix, Some ruleName when ruleName.Contains element.RuleName ->
+                    suggestedFix.Force()
+                    |> Option.map (fun suggestedFix ->
+                        let updatedSourceCode = sourceCode.Replace(suggestedFix.FromText, suggestedFix.ToText)
+                        File.WriteAllText(element.FilePath, updatedSourceCode, Encoding.UTF8)) |> ignore
+                | _ -> ()) warnings
+            String.Format(Resources.GetString("ConsoleFinished"), List.length warnings)
+            |> output.WriteInfo
+            if List.isEmpty warnings |> not then exitCode <- -1
+        | LintResult.Failure failure -> handleError failure.Description
 
-        let lintConfig = lintArgs.TryGetResult Lint_Config
-
-        let configParam =
-            match lintConfig with
-            | Some configPath -> FromFile configPath
-            | None -> Default
-
-
-        let lintParams =
-            { CancellationToken = None
-              ReceivedWarning = Some output.WriteWarning
-              Configuration = configParam
-              ReportLinterProgress = Some (parserProgress output) }
-
-        let target = lintArgs.GetResult Target
-        let fileType = lintArgs.TryGetResult File_Type |> Option.defaultValue (inferFileType target)
-
+    let linting fileType lintParams target toolsPath maybeName =
         try
             let lintResult =
                 match fileType with
@@ -119,12 +117,36 @@ let private start (arguments:ParseResults<ToolArgs>) (toolsPath:Ionide.ProjInfo.
                 | FileType.Solution -> Lint.lintSolution lintParams target toolsPath
                 | FileType.Project
                 | _ -> Lint.lintProject lintParams target toolsPath
-            handleLintResult lintResult
+            handleLintResult maybeName lintResult
         with
         | e ->
             let target = if fileType = FileType.Source then "source" else target
             sprintf "Lint failed while analysing %s.\nFailed with: %s\nStack trace: %s" target e.Message e.StackTrace
             |> handleError
+
+    let getParams config =
+        let paramConfig =
+            match config with
+            | Some configPath -> FromFile configPath
+            | None -> Default
+
+        { CancellationToken = None
+          ReceivedWarning = Some output.WriteWarning
+          Configuration = paramConfig
+          ReportLinterProgress = parserProgress output |> Some }
+
+    let applyLint (lintArgs: ParseResults<LintArgs>) =
+        let lintConfig = lintArgs.TryGetResult Lint_Config
+
+        let lintParams = getParams lintConfig
+        let target = lintArgs.GetResult Target
+        let fileType = lintArgs.TryGetResult File_Type |> Option.defaultValue (inferFileType target)
+        let ruleName = lintArgs.TryGetResult Fix
+
+        linting fileType lintParams target toolsPath ruleName
+
+    match arguments.GetSubCommand() with
+    | Lint lintArgs -> applyLint lintArgs
     | _ -> ()
 
     exitCode

@@ -24,12 +24,14 @@ type private FileType =
 type private ToolArgs =
     | [<AltCommandLine("-f")>] Format of OutputFormat
     | [<CliPrefix(CliPrefix.None)>] Lint of ParseResults<LintArgs>
+    | [<CliPrefix(CliPrefix.None)>] Fix of ParseResults<FixArgs>
 with
     interface IArgParserTemplate with
         member this.Usage =
             match this with
             | Format _ -> "Output format of the linter."
             | Lint _ -> "Runs FSharpLint against a file or a collection of files."
+            | Fix _ -> "Apply quickfixes for specified rule name or names (comma separated)."
 
 // TODO: investigate erroneous warning on this type definition
 // fsharplint:disable UnionDefinitionIndentation
@@ -37,7 +39,6 @@ and private LintArgs =
     | [<MainCommand; Mandatory>] Target of target:string
     | [<AltCommandLine("-l")>] Lint_Config of lintConfig:string
     | File_Type of FileType
-    | Fix of ruleName:string
 // fsharplint:enable UnionDefinitionIndentation
 with
     interface IArgParserTemplate with
@@ -46,7 +47,22 @@ with
             | Target _ -> "Input to lint."
             | File_Type _ -> "Input type the linter will run against. If this is not set, the file type will be inferred from the file extension."
             | Lint_Config _ -> "Path to the config for the lint."
-            | Fix _ -> "Apply quickfixes for specified rule name or names (comma separated)."
+// fsharplint:enable UnionCasesNames
+
+// TODO: investigate erroneous warning on this type definition
+// fsharplint:disable UnionDefinitionIndentation
+and private FixArgs =
+    | [<MainCommand; Mandatory>] Fix_Target of ruleName:string * target:string
+    | [<AltCommandLine("-l")>] Fix_Config of lintConfig:string
+    | Fix_File_Type of FileType
+// fsharplint:enable UnionDefinitionIndentation
+with
+    interface IArgParserTemplate with
+        member this.Usage =
+            match this with
+            | Fix_Target _ -> "Rule name or names (comma seperated) to be applied with suggestedFix and input to lint."
+            | Fix_File_Type _ -> "Input type the linter will run against. If this is not set, the file type will be inferred from the file extension."
+            | Fix_Config _ -> "Path to the config for the lint."
 // fsharplint:enable UnionCasesNames
 
 let private parserProgress (output:Output.IOutput) = function
@@ -140,12 +156,21 @@ let private start (arguments:ParseResults<ToolArgs>) (toolsPath:Ionide.ProjInfo.
         let lintParams = getParams lintConfig
         let target = lintArgs.GetResult Target
         let fileType = lintArgs.TryGetResult File_Type |> Option.defaultValue (inferFileType target)
-        let ruleName = lintArgs.TryGetResult Fix
 
-        linting fileType lintParams target toolsPath ruleName
+        linting fileType lintParams target toolsPath None
+
+    let applySuggestedFix (fixArgs: ParseResults<FixArgs>) =
+        let fixConfig = fixArgs.TryGetResult Fix_Config
+
+        let fixParams = getParams fixConfig
+        let ruleName, target = fixArgs.GetResult Fix_Target
+        let fileType = fixArgs.TryGetResult Fix_File_Type |> Option.defaultValue (inferFileType target)
+
+        linting fileType fixParams target toolsPath (Some ruleName)
 
     match arguments.GetSubCommand() with
     | Lint lintArgs -> applyLint lintArgs
+    | Fix fixArgs -> applySuggestedFix fixArgs
     | _ -> ()
 
     exitCode

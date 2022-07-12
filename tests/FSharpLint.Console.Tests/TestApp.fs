@@ -95,3 +95,34 @@ type TestConsoleApplication() =
         
         Assert.AreEqual(0, returnCode)
         Assert.AreEqual(Set.empty, errors)
+
+    [<Test>]
+    member __.``Lint source with fix option``() =
+        let sourceCode = """
+module Fass =
+    let foo = new System.Collections.Generic.Dictionary<string, string>() |> ignore
+    let goo = new Guid() |> ignore
+    let ntoo = new Int32() |> ignore
+module Fall =
+    let uoo = new Uid() |> ignore
+    let version =  new System.Version()
+    let xoo = new Uint32() |> ignore
+        """
+
+        let expected = """
+module Fass =
+    let foo = System.Collections.Generic.Dictionary<string, string>() |> ignore
+    let goo = Guid() |> ignore
+    let ntoo = Int32() |> ignore
+module Fall =
+    let uoo = Uid() |> ignore
+    let version =  System.Version()
+    let xoo = Uint32() |> ignore
+        """
+        let ruleName = "RedundantNewKeyword"
+        use input = new TemporaryFile(sourceCode, "fs")
+        let (returnCode, errors) = main [| "fix"; ruleName; input.FileName |]
+
+        Assert.AreEqual(-1, returnCode)
+        Assert.AreEqual(set ["Usage of `new` keyword here is redundant."], errors)
+        Assert.AreEqual(expected, File.ReadAllText input.FileName)

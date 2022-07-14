@@ -105,6 +105,7 @@ let private start (arguments:ParseResults<ToolArgs>) (toolsPath:Ionide.ProjInfo.
 
     let handleLintResult (maybeRuleName: option<string>) = function
         | LintResult.Success(warnings) ->
+            let mutable quickFixesFound = false
             match maybeRuleName with
             | Some _ -> Resources.GetString "ConsoleApplyingSuggestedFixFile" |> output.WriteInfo
             | None -> ()
@@ -113,14 +114,16 @@ let private start (arguments:ParseResults<ToolArgs>) (toolsPath:Ionide.ProjInfo.
                 let sourceCode = File.ReadAllText element.FilePath
                 match element.Details.SuggestedFix, maybeRuleName with
                 | Some suggestedFix, Some ruleName when ruleName.Contains element.RuleName ->
+
                     suggestedFix.Force()
                     |> Option.map (fun suggestedFix ->
+                        quickFixesFound <- true
                         let updatedSourceCode = sourceCode.Replace(suggestedFix.FromText, suggestedFix.ToText)
                         File.WriteAllText(element.FilePath, updatedSourceCode, Encoding.UTF8)) |> ignore
                 | _ -> ()) warnings
             String.Format(Resources.GetString("ConsoleFinished"), List.length warnings)
             |> output.WriteInfo
-            if List.isEmpty warnings |> not then exitCode <- -1
+            if List.isEmpty warnings || quickFixesFound |> not then exitCode <- -1
         | LintResult.Failure failure -> handleError failure.Description
 
     let linting fileType lintParams target toolsPath maybeRuleName =
